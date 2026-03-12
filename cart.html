@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <script>
+    if (window.parent === window) {
+      window.location.replace('index.html?page=cart');
+    }
+    if (window.parent !== window) {
+      document.write('<style>.bottom-nav,#bottomNavBar{display:none!important}body{padding-bottom:0!important}</style>');
+    }
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="description" content="Корзина - Кербен B2B Market">
+  <meta name="theme-color" content="#4CAF50">
+  
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" href="icon-kerben.jpg">
+  <link rel="icon" type="image/jpeg" href="icon-kerben.jpg">
+  
+  <title>Корзина - Кербен</title>
+
+  <!-- Предзагрузка DNS для быстрого доступа -->
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+  <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+    
+    .page-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #fff;
+      padding: 15px 20px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .back-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 5px;
+      color: #333;
+      text-decoration: none;
+    }
+    
+    .page-title { flex: 1; font-size: 18px; font-weight: 600; color: #333; }
+    
+    .clear-btn {
+      background: none;
+      border: none;
+      color: #f44336;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    
+    .cart-content { padding: 15px; padding-bottom: 180px; }
+    
+    .cart-empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+    
+    .cart-empty-icon { font-size: 64px; margin-bottom: 15px; }
+    .cart-empty-text { font-size: 18px; margin-bottom: 10px; color: #666; }
+    .cart-empty-subtext { font-size: 14px; margin-bottom: 25px; }
+    
+    .go-shopping-btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 14px 30px;
+      border-radius: 25px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    
+    .cart-item {
+      background: #fff;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 12px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    
+    .cart-item-img {
+      width: 70px;
+      height: 70px;
+      object-fit: cover;
+      border-radius: 10px;
+      background: #f0f0f0;
+    }
+    
+    .cart-item-info { flex: 1; min-width: 0; }
+    
+    .cart-item-title {
+      font-weight: 600;
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    .cart-item-variant {
+      color: #7b1fa2;
+      font-size: 11px;
+      margin-bottom: 4px;
+      background: #f3e5f5;
+      padding: 3px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    
+    .cart-item-price-unit { color: #666; font-size: 12px; margin-bottom: 8px; }
+    
+    .cart-item-qty-controls { display: flex; align-items: center; gap: 6px; }
+    
+    .qty-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: #e0e0e0;
+      font-size: 18px;
+      cursor: pointer;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+    
+    .qty-value { padding: 0 12px; font-weight: 700; font-size: 16px; min-width: 40px; text-align: center; }
+    .qty-unit { color: #888; font-size: 12px; }
+    
+    .cart-item-right { text-align: right; }
+    .cart-item-total { font-size: 17px; font-weight: 700; color: #e53935; margin-bottom: 8px; }
+    
+    .remove-btn {
+      background: #ffebee;
+      color: #c62828;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    
+    .pack-badge {
+      background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+      color: white;
+      padding: 2px 6px;
+      border-radius: 8px;
+      font-size: 9px;
+      margin-left: 6px;
+    }
+    
+    .cart-footer {
+      position: fixed;
+      bottom: 56px;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border-top: 1px solid #e0e0e0;
+      padding: 15px 20px;
+      box-shadow: 0 -4px 15px rgba(0,0,0,0.08);
+      z-index: 90;
+    }
+    
+    .cart-summary { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .cart-summary-label { font-size: 14px; color: #666; }
+    .cart-summary-total { font-size: 22px; font-weight: 700; color: #333; }
+    .cart-summary-info { font-size: 12px; color: #888; margin-bottom: 12px; }
+    
+    .checkout-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #4CAF50, #2e7d32);
+      color: white;
+      border: none;
+      padding: 16px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: block;
+      text-align: center;
+    }
+    
+    .checkout-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Форма заказа в корзине */
+
+    
+@media (min-width: 769px) {
+      .cart-footer { bottom: 0; }
+    }
+  </style>
+  
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="js/persist-profile.js?v=1"></script>
+  <!-- XLSX и jsPDF загружаются лениво — нужны только при отправке заказа -->
+  <script>
+    let _cartLibsLoaded = false;
+    function loadCartExportLibs() {
+      if (_cartLibsLoaded) return Promise.resolve();
+      return Promise.all([
+        new Promise(r => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = r; s.onerror = r; document.head.appendChild(s); }),
+        new Promise(r => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.onload = r; s.onerror = r; document.head.appendChild(s); })
+      ]).then(() => { _cartLibsLoaded = true; });
+    }
+  </script>
+</head>
+
+<body>
+  <header class="page-header">
+    <a href="#" onclick="goBack(); return false;" class="back-btn">←</a>
+    <h1 class="page-title">🛒 Корзина</h1>
+    <button class="clear-btn" onclick="clearCart()">Очистить</button>
+  </header>
+  
+  <main class="cart-content" id="cartContent"></main>
+  
+  <div class="cart-footer" id="cartFooter" style="display:none;">
+    <div class="cart-summary">
+      <span class="cart-summary-label">Итого:</span>
+      <span class="cart-summary-total" id="cartTotal">0 сом</span>
+    </div>
+    <div class="cart-summary-info" id="cartSummary"></div>
+    <button class="checkout-btn" id="submitOrderBtn" onclick="submitOrderFromCart()">📦 Отправить заказ</button>
+  </div>
+  
+  <script>
+    // Запоминаем изначальный URL при загрузке
+    const initialUrl = window.location.href;
+    
+    // Закрытие iframe или возврат назад
+    function goBack() {
+      if (window.parent !== window && window.location.href === initialUrl) {
+        window.parent.postMessage('closeIframe', '*');
+      } else if (window.parent !== window) {
+        window.location.href = initialUrl;
+      } else {
+        window.location.href = 'index.html';
+      }
+    }
+  </script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBRQ6hH7kXq7ApJmqbvTG1EQsXwxWEnaGg",
+      authDomain: "svoysayet.firebaseapp.com",
+      projectId: "svoysayet",
+      storageBucket: "svoysayet.firebasestorage.app",
+      messagingSenderId: "450143000217",
+      appId: "1:450143000217:web:7495cefaea0b94966e8a08",
+      measurementId: "G-Y8VG9E29FY"
+    };
+    
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    let products = [];
+    let primaryWarehouseId = '';
+    
+    // Функция исправления URL (https/ -> https://)
+    function fixCartImageUrl(url) {
+      if (!url || typeof url !== 'string') return '';
+      if (url.startsWith('https/')) {
+        url = 'https://' + url.substring(6);
+      }
+      if (url.startsWith('http/')) {
+        url = 'http://' + url.substring(5);
+      }
+      return url;
+    }
+    
+    // Функция обработки ошибки изображения корзины
+    function handleCartImageError(img, originalUrl) {
+      if (!img || img.dataset.failCount >= 2) {
+        img.src = 'data:image/svg+xml,' + encodeURIComponent(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect fill="#f0f0f0" width="80" height="80"/><text fill="#999" x="40" y="45" text-anchor="middle" font-size="12">📷</text></svg>'
+        );
+        return;
+      }
+      const failCount = parseInt(img.dataset.failCount || '0');
+      img.dataset.failCount = failCount + 1;
+      
+      if (failCount === 0) {
+        img.src = 'https://images.weserv.nl/?url=' + encodeURIComponent(fixCartImageUrl(originalUrl)) + '&default=1';
+      } else {
+        img.src = 'data:image/svg+xml,' + encodeURIComponent(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect fill="#f0f0f0" width="80" height="80"/><text fill="#999" x="40" y="45" text-anchor="middle" font-size="12">📷</text></svg>'
+        );
+      }
+    }
+    
+    async function loadProducts() {
+      try {
+        const [snapshot, settingsDoc] = await Promise.all([
+          db.collection('products').get(),
+          db.collection('settings').doc('warehouse').get()
+        ]);
+        products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (settingsDoc.exists) {
+          primaryWarehouseId = settingsDoc.data().primaryWarehouseId || '';
+        }
+      } catch (e) { console.error(e); }
+      renderCart();
+    }
+    
+    function renderCart() {
+      const content = document.getElementById('cartContent');
+      const footer = document.getElementById('cartFooter');
+      const clearBtn = document.querySelector('.clear-btn');
+      
+      if (cart.length === 0) {
+        content.innerHTML = `
+          <div class="cart-empty">
+            <div class="cart-empty-icon">🛒</div>
+            <div class="cart-empty-text">Корзина пуста</div>
+            <div class="cart-empty-subtext">Добавьте товары из каталога</div>
+            <button onclick="goBack()" class="go-shopping-btn">🛍️ За покупками</button>
+          </div>`;
+        footer.style.display = 'none';
+        clearBtn.style.display = 'none';
+        updateNavBadge();
+        return;
+      }
+      
+      footer.style.display = 'block';
+      clearBtn.style.display = 'block';
+      
+      let html = '';
+      let total = 0, totalItems = 0, packCount = 0;
+      
+      cart.forEach((item, i) => {
+        const product = products.find(p => p.id === item.id);
+        const isPack = item.isPack || (product && product.isPack);
+        const unitLabel = isPack ? 'пач.' : 'шт.';
+        const itemTotal = item.qty * item.price;
+        total += itemTotal;
+        totalItems += item.qty;
+        if (isPack) packCount++;
+        
+        html += `
+          <div class="cart-item">
+            <img referrerpolicy="no-referrer" data-original-url="${item.image}" src="${fixCartImageUrl(item.image)}" onerror="handleCartImageError(this, '${item.image}')" class="cart-item-img">
+            <div class="cart-item-info">
+              <div class="cart-item-title">${item.title}${isPack ? '<span class="pack-badge">ПАЧКА</span>' : ''}</div>
+              ${item.variantName ? `<div class="cart-item-variant">🎨 ${item.variantName}</div>` : ''}
+              <div class="cart-item-price-unit">${item.price} сом / ${unitLabel}</div>
+              <div class="cart-item-qty-controls">
+                <button class="qty-btn" onclick="changeQty(${i}, -1)">−</button>
+                <span class="qty-value">${item.qty}</span>
+                <button class="qty-btn" onclick="changeQty(${i}, 1)">+</button>
+                <span class="qty-unit">${unitLabel}</span>
+              </div>
+            </div>
+            <div class="cart-item-right">
+              <div class="cart-item-total">${itemTotal} сом</div>
+              <button class="remove-btn" onclick="removeItem(${i})">🗑️</button>
+            </div>
+          </div>`;
+      });
+      
+      content.innerHTML = html;
+      document.getElementById('cartTotal').textContent = total.toLocaleString() + ' сом';
+      
+      const posWord = cart.length === 1 ? 'позиция' : (cart.length < 5 ? 'позиции' : 'позиций');
+      let summary = `${cart.length} ${posWord}, ${totalItems} товаров`;
+      if (packCount > 0) summary += ` (${packCount} пачек)`;
+      document.getElementById('cartSummary').textContent = summary;
+      updateNavBadge();
+    }
+    
+    function changeQty(index, delta) {
+      const item = cart[index];
+      const product = products.find(p => p.id === item.id);
+      const step = (item.isPack || (product && product.isPack)) ? 1 : (product?.minQty || 1);
+      const newQty = item.qty + (delta * step);
+      
+      if (newQty <= 0) { removeItem(index); return; }
+      
+      item.qty = newQty;
+      if (product && product.optQty && newQty >= product.optQty && product.optPrice) {
+        item.price = product.optPrice;
+      } else if (product) {
+        item.price = product.price;
+      }
+      saveCart();
+      renderCart();
+    }
+    
+    function removeItem(index) {
+      Swal.fire({
+        title: 'Удалить?',
+        text: cart[index].title,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Удалить',
+        cancelButtonText: 'Отмена'
+      }).then(r => {
+        if (r.isConfirmed) {
+          cart.splice(index, 1);
+          saveCart();
+          renderCart();
+        }
+      });
+    }
+    
+    function clearCart() {
+      if (!cart.length) return;
+      Swal.fire({
+        title: 'Очистить корзину?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Очистить',
+        cancelButtonText: 'Отмена'
+      }).then(r => {
+        if (r.isConfirmed) { cart = []; saveCart(); renderCart(); }
+      });
+    }
+    
+    function saveCart() {
+      localStorage.setItem('cart', JSON.stringify(cart));
+    }
+    
+    function updateNavBadge() {
+      const badge = document.getElementById('navCartBadge');
+      if (badge) {
+        badge.textContent = cart.length;
+        badge.style.display = cart.length > 0 ? 'flex' : 'none';
+      }
+    }
+    
+    window.addEventListener('storage', e => {
+      if (e.key === 'cart') { cart = JSON.parse(e.newValue || '[]'); renderCart(); }
+    });
+    
+    // Получение данных клиента из профиля / localStorage
+    function getCustomerData() {
+      // 1. Сначала из customerData (авторизованный клиент)
+      try {
+        const customer = JSON.parse(localStorage.getItem('customerData') || 'null');
+        if (customer && customer.name && customer.phone) {
+          return {
+            name: customer.name,
+            phone: customer.phone,
+            address: customer.address || ''
+          };
+        }
+      } catch(e) {}
+      
+      // 2. Из userData (сохранённые данные предыдущего заказа)
+      try {
+        const saved = JSON.parse(localStorage.getItem('userData') || '{}');
+        if (saved.name && saved.phone) {
+          return {
+            name: saved.name,
+            phone: saved.phone,
+            address: saved.address || ''
+          };
+        }
+      } catch(e) {}
+      
+      return null;
+    }
+    
+    function getDriverData() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('userData') || '{}');
+        return {
+          driverName: saved.driverName || '',
+          driverPhone: saved.driverPhone || ''
+        };
+      } catch(e) {}
+      return { driverName: '', driverPhone: '' };
+    }
+    
+    // Получение партнера
+    function getCurrentPartner() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const ref = urlParams.get('ref');
+        if (ref) { localStorage.setItem('referralPartner', ref); return ref; }
+      } catch(e) {}
+      try {
+        const savedRef = localStorage.getItem('referralPartner');
+        if (savedRef) return savedRef;
+      } catch(e) {}
+      let savedData = sessionStorage.getItem('partnerData');
+      if (!savedData) { try { savedData = localStorage.getItem('partnerData'); } catch(e) {} }
+      if (!savedData) return null;
+      try {
+        const partnerData = JSON.parse(savedData);
+        const daysPassed = (Date.now() - partnerData.timestamp) / (1000 * 60 * 60 * 24);
+        if (daysPassed <= 30) return partnerData.name;
+        sessionStorage.removeItem('partnerData');
+        try { localStorage.removeItem('partnerData'); } catch(e) {}
+      } catch(e) {}
+      return null;
+    }
+
+    // Сохранение заказа в локальную историю
+    function saveOrderToHistory(order) {
+      try {
+        const history = JSON.parse(localStorage.getItem('orderHistory') || '[]');
+        history.unshift(order);
+        if (history.length > 50) history.length = 50;
+        localStorage.setItem('orderHistory', JSON.stringify(history));
+      } catch(e) {}
+    }
+
+    // ============ ОТПРАВКА ЗАКАЗА ============
+    async function submitOrderFromCart() {
+      const submitBtn = document.getElementById('submitOrderBtn');
+      
+      if (cart.length === 0) {
+        Swal.fire('Ошибка', 'Корзина пуста', 'warning');
+        return;
+      }
+
+      // Антиспам
+      try {
+        const cooldownUntil = parseInt(localStorage.getItem('firestoreCooldownUntil') || '0', 10) || 0;
+        if (Date.now() < cooldownUntil) {
+          const sec = Math.ceil((cooldownUntil - Date.now()) / 1000);
+          Swal.fire('Подождите', `Слишком много запросов. Повторите через ${sec} сек.`, 'warning');
+          return;
+        }
+      } catch(e) {}
+
+      // Получаем данные клиента из профиля
+      let customerInfo = getCustomerData();
+      const driverInfo = getDriverData();
+      const savedRef = localStorage.getItem('savedReferredBy') || '';
+      
+      // Если данных нет — спрашиваем через диалог
+      if (!customerInfo || !customerInfo.name || !customerInfo.phone) {
+        const result = await Swal.fire({
+          title: '📋 Данные для заказа',
+          html: `
+            <div style="text-align:left;">
+              <div style="margin-bottom:12px;">
+                <label style="display:block; margin-bottom:4px; font-weight:600; font-size:13px;">Ваше имя *</label>
+                <input type="text" id="swal-name" value="${customerInfo?.name || ''}" placeholder="Введите имя" style="width:100%; padding:12px; border:2px solid #4CAF50; border-radius:8px; font-size:16px; box-sizing:border-box;">
+              </div>
+              <div style="margin-bottom:12px;">
+                <label style="display:block; margin-bottom:4px; font-weight:600; font-size:13px;">Телефон *</label>
+                <input type="tel" id="swal-phone" value="${customerInfo?.phone || ''}" placeholder="+996 ..." style="width:100%; padding:12px; border:2px solid #4CAF50; border-radius:8px; font-size:16px; box-sizing:border-box;">
+              </div>
+              <div style="margin-bottom:12px;">
+                <label style="display:block; margin-bottom:4px; font-weight:600; font-size:13px;">Адрес доставки *</label>
+                <input type="text" id="swal-address" value="${customerInfo?.address || ''}" placeholder="Город, улица, дом" style="width:100%; padding:12px; border:2px solid #4CAF50; border-radius:8px; font-size:16px; box-sizing:border-box;">
+              </div>
+              <hr style="border:none; border-top:1px solid #eee; margin:14px 0;">
+              <div style="margin-bottom:10px;">
+                <label style="display:block; margin-bottom:4px; font-weight:600; font-size:13px; color:#888;">Имя водителя <span style="font-size:11px;">(необяз.)</span></label>
+                <input type="text" id="swal-driver-name" value="${driverInfo.driverName}" placeholder="Имя водителя" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:15px; box-sizing:border-box; background:#f9f9f9;">
+              </div>
+              <div style="margin-bottom:10px;">
+                <label style="display:block; margin-bottom:4px; font-weight:600; font-size:13px; color:#888;">Номер водителя <span style="font-size:11px;">(необяз.)</span></label>
+                <input type="tel" id="swal-driver-phone" value="${driverInfo.driverPhone}" placeholder="Номер водителя" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:15px; box-sizing:border-box; background:#f9f9f9;">
+              </div>
+            </div>
+          `,
+          showCancelButton: true,
+          confirmButtonText: '📦 Отправить заказ',
+          cancelButtonText: 'Отмена',
+          confirmButtonColor: '#4CAF50',
+          preConfirm: () => {
+            const n = document.getElementById('swal-name').value.trim();
+            const p = document.getElementById('swal-phone').value.trim();
+            const a = document.getElementById('swal-address').value.trim();
+            if (!n || !p || !a) { Swal.showValidationMessage('Заполните имя, телефон и адрес'); return false; }
+            return {
+              name: n, phone: p, address: a,
+              driverName: document.getElementById('swal-driver-name').value.trim(),
+              driverPhone: document.getElementById('swal-driver-phone').value.trim()
+            };
+          }
+        });
+        if (!result.isConfirmed) return;
+        customerInfo = { name: result.value.name, phone: result.value.phone, address: result.value.address };
+        driverInfo.driverName = result.value.driverName;
+        driverInfo.driverPhone = result.value.driverPhone;
+      } else {
+        // Данные есть — показываем подтверждение с возможностью изменить
+        const total = cart.reduce((sum, item) => sum + item.qty * item.price, 0);
+        const result = await Swal.fire({
+          title: '📦 Подтвердите заказ',
+          html: `
+            <div style="text-align:left; font-size:14px;">
+              <div style="background:#f0f7f0; padding:14px; border-radius:10px; margin-bottom:12px;">
+                <div style="font-weight:700; margin-bottom:6px;">👤 ${customerInfo.name}</div>
+                <div style="color:#555;">📞 ${customerInfo.phone}</div>
+                <div style="color:#555;">📍 ${customerInfo.address || 'Не указан'}</div>
+                ${driverInfo.driverName ? '<div style="color:#17a2b8; margin-top:6px;">🚗 ' + driverInfo.driverName + (driverInfo.driverPhone ? ' • ' + driverInfo.driverPhone : '') + '</div>' : ''}
+              </div>
+              <div style="text-align:center; font-size:20px; font-weight:700; color:#333;">Итого: ${total.toLocaleString()} сом</div>
+              <div style="text-align:center; margin-top:6px;"><a href="#" id="swal-change-data" style="color:#1565c0; font-size:13px;">Изменить данные</a></div>
+            </div>
+          `,
+          showCancelButton: true,
+          confirmButtonText: '✅ Отправить',
+          cancelButtonText: 'Отмена',
+          confirmButtonColor: '#4CAF50',
+          didOpen: () => {
+            document.getElementById('swal-change-data').addEventListener('click', (e) => {
+              e.preventDefault();
+              Swal.close({ isConfirmed: false, isDismissed: true, dismiss: 'change' });
+            });
+          }
+        });
+        
+        if (result.dismiss === 'change') {
+          // Открываем форму редактирования
+          const editResult = await Swal.fire({
+            title: '✏️ Изменить данные',
+            html: `
+              <div style="text-align:left;">
+                <div style="margin-bottom:12px;">
+                  <label style="display:block; margin-bottom:4px; font-weight:600; font-size:13px;">Имя *</label>
+                  <input type="text" id="swal-name" value="${customerInfo.name}" style="width:100%; padding:12px; border:2px solid #4CAF50; border-radius:8px; font-size:16px; box-sizing:border-box;">
+                </div>
+                <div style="margin-bottom:12px;">
+                  <label style="display:block; margin-bottom:4px; font-weight:600; font-size:13px;">Телефон *</label>
+                  <input type="tel" id="swal-phone" value="${customerInfo.phone}" style="width:100%; padding:12px; border:2px solid #4CAF50; border-radius:8px; font-size:16px; box-sizing:border-box;">
+                </div>
+                <div style="margin-bottom:12px;">
+                  <label style="display:block; margin-bottom:4px; font-weight:600; font-size:13px;">Адрес *</label>
+                  <input type="text" id="swal-address" value="${customerInfo.address}" style="width:100%; padding:12px; border:2px solid #4CAF50; border-radius:8px; font-size:16px; box-sizing:border-box;">
+                </div>
+                <hr style="border:none; border-top:1px solid #eee; margin:14px 0;">
+                <div style="margin-bottom:10px;">
+                  <label style="display:block; margin-bottom:4px; font-weight:600; font-size:13px; color:#888;">Водитель</label>
+                  <input type="text" id="swal-driver-name" value="${driverInfo.driverName}" placeholder="Имя" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:15px; box-sizing:border-box; background:#f9f9f9; margin-bottom:8px;">
+                  <input type="tel" id="swal-driver-phone" value="${driverInfo.driverPhone}" placeholder="Телефон" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:15px; box-sizing:border-box; background:#f9f9f9;">
+                </div>
+              </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '📦 Отправить',
+            cancelButtonText: 'Отмена',
+            confirmButtonColor: '#4CAF50',
+            preConfirm: () => {
+              const n = document.getElementById('swal-name').value.trim();
+              const p = document.getElementById('swal-phone').value.trim();
+              const a = document.getElementById('swal-address').value.trim();
+              if (!n || !p || !a) { Swal.showValidationMessage('Заполните имя, телефон и адрес'); return false; }
+              return { name: n, phone: p, address: a, driverName: document.getElementById('swal-driver-name').value.trim(), driverPhone: document.getElementById('swal-driver-phone').value.trim() };
+            }
+          });
+          if (!editResult.isConfirmed) return;
+          customerInfo = { name: editResult.value.name, phone: editResult.value.phone, address: editResult.value.address };
+          driverInfo.driverName = editResult.value.driverName;
+          driverInfo.driverPhone = editResult.value.driverPhone;
+        } else if (!result.isConfirmed) {
+          return;
+        }
+      }
+
+      const name = customerInfo.name;
+      const phone = customerInfo.phone;
+      const address = customerInfo.address;
+      let driverName = driverInfo.driverName;
+      let driverPhone = driverInfo.driverPhone;
+      const referredBy = savedRef;
+
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = '0.5';
+      const originalText = submitBtn.textContent;
+      submitBtn.textContent = '⏳ Проверка товаров...';
+
+      try {
+        // Проверяем все товары в корзине
+        const validCart = [];
+        const problems = { blocked: [], deleted: [], outOfStock: [] };
+        
+        for (const cartItem of cart) {
+          const product = products.find(p => p.id === cartItem.id);
+          if (!product) {
+            problems.deleted.push(cartItem.title);
+          } else if (product.blocked) {
+            problems.blocked.push(cartItem.title);
+          } else if (typeof product.stock === 'number' && isFinite(product.stock)) {
+            const stock = Math.max(0, Math.floor(product.stock));
+            if (stock <= 0) {
+              problems.outOfStock.push(`${cartItem.title} (нет в наличии)`);
+            } else if ((cartItem.qty || 0) > stock) {
+              problems.outOfStock.push(`${cartItem.title} (доступно ${stock} шт)`);
+            } else {
+              validCart.push({ ...cartItem, title: product.title, price: product.price, costPrice: product.costPrice || 0, sellerId: product.sellerId || null, sellerName: product.sellerName || null });
+            }
+          } else {
+            validCart.push({ ...cartItem, title: product.title, price: product.price, costPrice: product.costPrice || 0, sellerId: product.sellerId || null, sellerName: product.sellerName || null });
+          }
+        }
+        
+        // Обработка проблемных товаров
+        if (problems.blocked.length || problems.deleted.length || problems.outOfStock.length) {
+          let warningText = '';
+          if (problems.blocked.length) warningText += '<div style="color:#dc3545; margin:10px 0;"><strong>❌ Заблокированы:</strong><br>' + problems.blocked.join('<br>') + '</div>';
+          if (problems.deleted.length) warningText += '<div style="color:#dc3545; margin:10px 0;"><strong>🗑️ Удалены:</strong><br>' + problems.deleted.join('<br>') + '</div>';
+          if (problems.outOfStock.length) warningText += '<div style="color:#dc3545; margin:10px 0;"><strong>📦 Нет остатка:</strong><br>' + problems.outOfStock.join('<br>') + '</div>';
+          
+          if (validCart.length === 0) {
+            Swal.fire({ icon: 'error', title: 'Невозможно оформить', html: warningText + '<br><strong>Все товары недоступны.</strong>' });
+            cart.length = 0; saveCart(); renderCart();
+            submitBtn.disabled = false; submitBtn.style.opacity = '1'; submitBtn.textContent = originalText;
+            return;
+          }
+          
+          const r = await Swal.fire({
+            icon: 'warning', title: 'Внимание!',
+            html: warningText + `<br><strong style="color:#28a745;">✓ Доступные (${validCart.length} шт) можно заказать.</strong><br><br>Продолжить?`,
+            showCancelButton: true, confirmButtonText: 'Да', cancelButtonText: 'Отмена', confirmButtonColor: '#28a745'
+          });
+          if (!r.isConfirmed) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; submitBtn.textContent = originalText; return; }
+          cart.length = 0; cart.push(...validCart); saveCart();
+        }
+
+        submitBtn.textContent = '⏳ Отправка...';
+
+        const items = cart.map(i => {
+          const product = products.find(p => p.id === i.id);
+          const unitLabel = (product && product.isPack) ? 'пачка' : 'шт';
+          const packInfo = (product && product.isPack && product.packQty) ? ` (~${product.packQty} шт/пачка)` : '';
+          const variantInfo = i.variant ? ` [${i.variant}]` : '';
+          return `${i.title}${variantInfo}${packInfo} — ${i.qty} ${unitLabel} × ${i.price} сом = ${i.qty * i.price} сом`;
+        }).join('\n');
+        const total = cart.reduce((sum, item) => sum + item.qty * item.price, 0);
+        const currentTime = new Date().toLocaleString();
+
+        let partner = getCurrentPartner();
+        if (!partner && referredBy) partner = referredBy;
+        if (!partner && phone) {
+          try {
+            const cad = await db.collection('clientAgents').doc(phone).get();
+            if (cad.exists) partner = cad.data().agentName;
+          } catch(e) {}
+        }
+        if (referredBy) try { localStorage.setItem('savedReferredBy', referredBy); } catch(e) {}
+
+        // Batch: списание остатков + сохранение заказа
+        submitBtn.textContent = '⏳ Сохранение...';
+        const orderRef = db.collection('orders').doc();
+        const batch = db.batch();
+        const warehouseDeductions = {};
+
+        for (const item of cart) {
+          const localProduct = products.find(p => p.id === item.id);
+          const hasLocalStock = localProduct && typeof localProduct.stock === 'number' && isFinite(localProduct.stock);
+          if (!hasLocalStock) continue;
+          const need = Math.max(0, Math.floor(item.qty || 0));
+          if (need <= 0) throw new Error(`Некорректное количество: ${item.title}`);
+          const localStock = Math.max(0, Math.floor(localProduct.stock));
+          if (localStock < need) throw new Error(`Недостаточно остатка: ${localProduct.title || item.title}. Доступно ${localStock} шт`);
+          
+          const productRef = db.collection('products').doc(item.id);
+
+          // Списание со складов
+          const ws = localProduct.warehouseStock;
+          if (ws && typeof ws === 'object') {
+            let remaining = need;
+            const updatedWs = { ...ws };
+            const itemDeductions = {};
+
+            // Если есть главный склад — списываем сначала с него
+            if (primaryWarehouseId && updatedWs[primaryWarehouseId] > 0) {
+              const deduct = Math.min(remaining, updatedWs[primaryWarehouseId]);
+              updatedWs[primaryWarehouseId] -= deduct;
+              remaining -= deduct;
+              itemDeductions[primaryWarehouseId] = deduct;
+            }
+
+            // Если на главном не хватило — добираем с остальных
+            if (remaining > 0) {
+              const otherWh = Object.entries(updatedWs)
+                .filter(([whId, qty]) => qty > 0 && whId !== primaryWarehouseId)
+                .sort((a, b) => b[1] - a[1]);
+              for (const [whId, whQty] of otherWh) {
+                if (remaining <= 0) break;
+                const deduct = Math.min(remaining, whQty);
+                updatedWs[whId] -= deduct;
+                remaining -= deduct;
+                itemDeductions[whId] = deduct;
+              }
+            }
+
+            if (Object.keys(itemDeductions).length > 0) {
+              warehouseDeductions[item.id] = itemDeductions;
+            }
+
+            const newTotal = Object.values(updatedWs).reduce((s, v) => s + (v || 0), 0);
+            batch.update(productRef, { stock: newTotal, warehouseStock: updatedWs });
+          } else {
+            batch.update(productRef, { stock: firebase.firestore.FieldValue.increment(-need) });
+          }
+        }
+
+        batch.set(orderRef, {
+          name, phone, address,
+          driverName: driverName || null, driverPhone: driverPhone || null,
+          items: cart.map(item => ({
+            id: item.id, title: item.title, qty: item.qty, price: item.price,
+            image: item.image || null,
+            costPrice: item.costPrice || 0, sellerId: item.sellerId || null,
+            sellerName: item.sellerName || null, variant: item.variant || null
+          })),
+          total, timestamp: Date.now(), time: currentTime, status: 'pending',
+          partner: partner || null, referredBy: referredBy || null,
+          warehouseDeductions: Object.keys(warehouseDeductions).length > 0 ? warehouseDeductions : null
+        });
+
+        await batch.commit();
+
+        Swal.fire('Успех! ✅', 'Ваш заказ принят!', 'success');
+
+        // Сохраняем данные пользователя
+        localStorage.setItem('userData', JSON.stringify({ name, phone, address, driverName, driverPhone }));
+
+        // Сохраняем в историю
+        saveOrderToHistory({
+          name, phone, address, driverName: driverName || null, driverPhone: driverPhone || null,
+          items: [...cart], total, timestamp: Date.now(), time: currentTime, status: 'pending'
+        });
+
+        // Авторегистрация клиента
+        let _autoCustomerId = null;
+        try {
+          const normalizedPhone = phone.replace(/[^\d+]/g, '');
+          const nPhone = normalizedPhone.startsWith('0') ? '+996' + normalizedPhone.substring(1) : 
+                         normalizedPhone.startsWith('+') ? normalizedPhone : 
+                         normalizedPhone.startsWith('996') ? '+' + normalizedPhone : '+996' + normalizedPhone;
+          
+          const customerDoc = await db.collection('customers').doc(nPhone).get();
+          if (!customerDoc.exists) {
+            await db.collection('customers').doc(nPhone).set({
+              name, phone: nPhone, address, registeredAt: firebase.firestore.FieldValue.serverTimestamp(),
+              totalOrders: 1, totalSpent: total,
+              password: nPhone.slice(-4),
+              createdAt: Date.now()
+            });
+            _autoCustomerId = nPhone;
+          } else {
+            await db.collection('customers').doc(nPhone).update({
+              name, address, totalOrders: firebase.firestore.FieldValue.increment(1),
+              totalSpent: firebase.firestore.FieldValue.increment(total)
+            });
+            _autoCustomerId = nPhone;
+          }
+          
+          // ВАЖНО: Сохраняем customerData для PersistProfile (чтобы profile.html находил данные)
+          const customerDataForProfile = {
+            id: _autoCustomerId,
+            name: name,
+            phone: nPhone,
+            address: address || '',
+            createdAt: Date.now()
+          };
+          try { localStorage.setItem('customerData', JSON.stringify(customerDataForProfile)); } catch(e) {}
+          if (window.PersistProfile) {
+            window.PersistProfile.save(customerDataForProfile);
+          }
+          console.log('[Cart] ✅ Профиль клиента сохранён для profile.html');
+        } catch(e) { console.log('Customer update error:', e); }
+
+        // Отправка уведомления в Telegram (фоново — текстовое сообщение)
+        const driverInfoText = (driverName || driverPhone) ? `\nВодитель: ${driverName || '-'}\nТел. водителя: ${driverPhone || '-'}` : '';
+        const msg = `Новый заказ:\nИмя: ${name}\nТелефон: ${phone}\nАдрес: ${address}${driverInfoText}\nТовары:\n${items}\n\nИтого: ${total} сом`;
+
+        // Загружаем XLSX/jsPDF если ещё не загружены (нужны для Excel/PDF файлов)
+        await loadCartExportLibs();
+
+        // Отправляем Excel, PDF для печати, PDF с фото — фоново
+        const orderData = { name, phone, address, driverName, driverPhone, cart: [...cart], total, currentTime };
+
+        if (typeof sendOrderAsExcelFile === 'function') {
+          sendOrderAsExcelFile(name, phone, address, driverName, driverPhone, orderData.cart, total, currentTime).catch(e => console.error('Excel error:', e));
+        }
+        if (typeof sendOrderAsPrintPDF === 'function') {
+          sendOrderAsPrintPDF(name, phone, address, driverName, driverPhone, orderData.cart, total, currentTime).catch(e => console.error('PDF print error:', e));
+        }
+        if (typeof sendOrderAsPDF === 'function') {
+          sendOrderAsPDF(name, phone, address, driverName, driverPhone, orderData.cart, total, currentTime).catch(e => console.error('PDF photo error:', e));
+        }
+
+        // Очищаем корзину
+        cart.length = 0;
+        saveCart();
+        renderCart();
+
+      } catch (error) {
+        console.error('Order error:', error);
+        Swal.fire('Ошибка', error.message || 'Не удалось отправить заказ', 'error');
+        try {
+          const msg = String(error.message || '');
+          if (msg.includes('quota') || msg.includes('429') || msg.includes('too many')) {
+            localStorage.setItem('firestoreCooldownUntil', String(Date.now() + 45000));
+          }
+        } catch(e) {}
+      }
+      
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+      submitBtn.textContent = originalText;
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      loadProducts();
+    });
+
+    // Слушаем сообщение от родителя для обновления корзины при повторном открытии
+    window.addEventListener('message', function(e) {
+      if (e.data === 'refreshCart') {
+        cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        renderCart();
+      }
+    });
+  </script>
+  <script src="js/image-optimizer.js"></script>
+  <script>
+    // Заглушка для fixImageOrientation (используется в orders.js для PDF)
+    if (typeof fixImageOrientation === 'undefined') {
+      window.fixImageOrientation = async function(file) { return file; };
+    }
+  </script>
+  <script src="js/orders.js"></script>
+<script src="js/bottom-nav.js?v=28"></script>
+</body>
+</html>

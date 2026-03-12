@@ -1,0 +1,2462 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <script>if(window.parent!==window)document.write('<style>.bottom-nav,#bottomNavBar{display:none!important}body{padding-bottom:0!important}#ordersManagementWindow{bottom:0!important}</style>')</script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Заказы клиентов - Кербен</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+    input, textarea, select {
+      font-family: inherit;
+      font-size: 16px;
+    }
+    
+    /* SweetAlert поверх всего */
+    .swal2-container {
+      z-index: 999999 !important;
+    }
+    
+
+    
+    /* Карточки товаров в модальном окне */
+    .order-items-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .order-item-card {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .order-item-card-title {
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      color: white;
+      padding: 10px 14px;
+      font-weight: 600;
+      font-size: 15px;
+    }
+    .order-item-card-body {
+      padding: 12px 14px;
+    }
+    .order-item-field {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .order-item-field:last-of-type {
+      border-bottom: none;
+    }
+    .order-item-field .label {
+      font-size: 13px;
+      color: #666;
+    }
+    .order-item-field .value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+    }
+    .order-item-actions {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #e0e0e0;
+      text-align: right;
+    }
+    
+    /* Адаптивность для телефонов */
+    @media (max-width: 600px) {
+      #ordersManagementWindow > div,
+      #addItemToOrderModal > div {
+        width: 100% !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+      }
+      
+      #orderItemsDetailModal > div {
+        width: 100% !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+      }
+      
+      .orders-filters {
+        gap: 6px !important;
+      }
+      .orders-filters input,
+      .orders-filters select {
+        padding: 8px !important;
+        font-size: 13px !important;
+      }
+      #orderItemsDetailContent {
+        padding: 12px !important;
+      }
+      .order-card {
+        margin-bottom: 10px !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Окно управления заказами - НА ВЕСЬ ЭКРАН -->
+  <div id="ordersManagementWindow" style="position:fixed; top:0; left:0; right:0; bottom:56px; background:#f5f5f5; z-index:9650;">
+    <div style="background:#f5f5f5; width:100%; height:100%; display:flex; flex-direction:column;">
+
+      <!-- Шапка -->
+      <div style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h2 style="margin:0; font-size:20px;">📦 Заказы клиентов</h2>
+          <p style="margin:5px 0 0; opacity:0.9; font-size:13px;">Управление заказами</p>
+        </div>
+        <button onclick="closeOrdersManagementWindow()" style="background:rgba(255,255,255,0.2); color:white; border:none; font-size:28px; width:44px; height:44px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
+      </div>
+
+      <!-- Поиск -->
+      <div style="padding:12px 16px 8px; background:#fff;">
+        <input type="text" id="ordersSearchClient" placeholder="🔍 Поиск по имени, телефону или товару..." oninput="scheduleOrdersManagementSearch()" style="width:100%; padding:10px 14px; border:1px solid #e0e0e0; border-radius:10px; font-size:15px; background:#f8f8f8; box-sizing:border-box;">
+      </div>
+
+      <!-- Фильтры -->
+      <div class="orders-filters" style="padding:8px 16px 12px; background:#fff; border-bottom:1px solid #e0e0e0; display:flex; gap:8px; align-items:center;">
+        <select id="ordersFilterCombined" onchange="applyOrdersCombinedFilter()" style="width:50%; padding:8px 10px; border:1px solid #e0e0e0; border-radius:8px; font-size:13px; background:#fff;">
+          <option value="all|all">Все</option>
+          <option value="all|today">Сегодня</option>
+          <option value="all|yesterday">Вчера</option>
+          <option value="all|week">Неделя</option>
+          <option value="pending|all">🕐 Новые</option>
+          <option value="preparing|all">📦 Готовятся</option>
+          <option value="logistics|all">🚚 Логистика</option>
+          <option value="driver|all">🚗 Доставка</option>
+          <option value="completed|all">✓ Готовы</option>
+          <option value="cancelled|all">✕ Отменены</option>
+        </select>
+        <button onclick="openMergeOrdersModal()" style="padding:8px 12px; background:#667eea; color:white; border:none; border-radius:8px; cursor:pointer; font-size:13px;">🔗</button>
+        <button onclick="loadOrdersManagement(true)" style="padding:8px 12px; background:#28a745; color:white; border:none; border-radius:8px; cursor:pointer; font-size:13px;">🔄</button>
+      </div>
+
+      <!-- Скрытые фильтры для совместимости -->
+      <select id="ordersFilterStatus" style="display:none;"><option value="all" selected></option></select>
+      <select id="ordersFilterDate" style="display:none;"><option value="all" selected></option></select>
+
+      <!-- Список заказов -->
+      <div id="ordersManagementList" style="flex:1; overflow-y:auto; padding:12px 16px; background:#f5f5f5;">
+        <div style="text-align:center; color:#999; padding:40px;">⏳ Загрузка заказов...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно редактирования заказа -->
+  <div id="editOrderModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9700; justify-content:center; align-items:center;">
+    <div style="background:white; width:95%; max-width:500px; max-height:90vh; border-radius:16px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <div style="padding:16px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;">
+        <div>
+          <h2 style="margin:0; font-size:17px; font-weight:600; color:#1a1a1a;">Редактировать заказ</h2>
+          <p style="margin:4px 0 0; font-size:12px; color:#888;" id="editOrderModalInfo">Загрузка...</p>
+        </div>
+        <button onclick="closeEditOrderModal()" style="background:#f0f0f0; color:#333; border:none; font-size:18px; width:32px; height:32px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
+      </div>
+
+      <div style="flex:1; overflow-y:auto; padding:16px 20px;">
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <div>
+            <label style="font-size:12px; font-weight:500; color:#555; display:block; margin-bottom:6px;">Имя клиента</label>
+            <input id="editOrderName" type="text" placeholder="Введите имя" style="width:100%; padding:10px 12px; border:1px solid #e0e0e0; border-radius:8px; font-size:14px; box-sizing:border-box;" />
+          </div>
+          <div>
+            <label style="font-size:12px; font-weight:500; color:#555; display:block; margin-bottom:6px;">Телефон</label>
+            <input id="editOrderPhone" type="tel" placeholder="+996" style="width:100%; padding:10px 12px; border:1px solid #e0e0e0; border-radius:8px; font-size:14px; box-sizing:border-box;" />
+          </div>
+          <div>
+            <label style="font-size:12px; font-weight:500; color:#555; display:block; margin-bottom:6px;">Адрес доставки</label>
+            <input id="editOrderAddress" type="text" placeholder="Улица, дом, квартира" style="width:100%; padding:10px 12px; border:1px solid #e0e0e0; border-radius:8px; font-size:14px; box-sizing:border-box;" />
+          </div>
+          
+          <div style="padding-top:10px; border-top:1px solid #eee;">
+            <div style="font-size:11px; color:#999; margin-bottom:10px;">ДОПОЛНИТЕЛЬНО</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+              <div>
+                <label style="font-size:11px; color:#777; display:block; margin-bottom:4px;">Водитель</label>
+                <input id="editOrderDriverName" type="text" placeholder="Имя" style="width:100%; padding:8px 10px; border:1px solid #e0e0e0; border-radius:6px; font-size:13px; box-sizing:border-box;" />
+              </div>
+              <div>
+                <label style="font-size:11px; color:#777; display:block; margin-bottom:4px;">Тел. водителя</label>
+                <input id="editOrderDriverPhone" type="tel" placeholder="Номер" style="width:100%; padding:8px 10px; border:1px solid #e0e0e0; border-radius:6px; font-size:13px; box-sizing:border-box;" />
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <label style="font-size:11px; color:#777; display:block; margin-bottom:4px;">Кто привёл клиента?</label>
+            <input id="editOrderReferredBy" type="text" placeholder="Имя партнёра" style="width:100%; padding:8px 10px; border:1px solid #e0e0e0; border-radius:6px; font-size:13px; box-sizing:border-box;" />
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:12px 20px; background:#fafafa; border-top:1px solid #eee; display:flex; gap:10px;">
+        <button onclick="closeEditOrderModal()" style="flex:1; padding:12px; background:#f0f0f0; color:#333; border:none; border-radius:8px; cursor:pointer; font-size:14px; font-weight:500;">Отмена</button>
+        <button onclick="saveEditOrder()" style="flex:1; padding:12px; background:#007bff; color:white; border:none; border-radius:8px; cursor:pointer; font-size:14px; font-weight:600;">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно для просмотра товаров заказа -->
+  <div id="orderItemsDetailModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:9700;">
+    <div style="background:white; width:100%; height:100%; max-width:900px; margin:0 auto; display:flex; flex-direction:column; overflow:hidden;">
+      <!-- Заголовок -->
+      <div style="background:linear-gradient(135deg, #007bff 0%, #0056b3 100%); color:white; padding:20px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+        <div>
+          <h2 style="margin:0; font-size:22px;" id="orderItemsDetailTitle">Товары в заказе</h2>
+          <p style="margin:5px 0 0; opacity:0.9;" id="orderItemsDetailInfo">Информация о заказе</p>
+        </div>
+        <button onclick="closeOrderItemsDetailModal()" style="background:rgba(255,255,255,0.2); color:white; border:none; font-size:28px; width:40px; height:40px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
+      </div>
+
+      <!-- Список товаров -->
+      <div id="orderItemsDetailContent" style="flex:1; overflow-y:auto; padding:20px;">
+        <div style="text-align:center; color:#999; padding:40px;">Загрузка...</div>
+      </div>
+
+      <!-- Кнопки действий -->
+      <div style="padding:15px; background:#f8f9fa; border-top:1px solid #e0e0e0; display:flex; gap:10px; justify-content:flex-end; flex-shrink:0;">
+        <button id="orderItemsAddBtn" style="padding:10px 20px; background:#17a2b8; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">
+          ➕ Добавить товар
+        </button>
+        <button onclick="closeOrderItemsDetailModal()" style="padding:10px 20px; background:#6c757d; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">
+          Закрыть
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно для добавления товара в заказ -->
+  <div id="addItemToOrderModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:9750; justify-content:center; align-items:center;">
+    <div style="background:white; width:90%; max-width:600px; max-height:80vh; border-radius:12px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+      <!-- Заголовок -->
+      <div style="background:linear-gradient(135deg, #17a2b8 0%, #138496 100%); color:white; padding:20px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h2 style="margin:0; font-size:20px;">➕ Добавить товар в заказ</h2>
+          <p style="margin:5px 0 0; opacity:0.9; font-size:13px;">Выберите товар из списка</p>
+        </div>
+        <button onclick="closeAddItemToOrderModal()" style="background:rgba(255,255,255,0.2); color:white; border:none; font-size:28px; width:40px; height:40px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
+      </div>
+
+      <!-- Поиск товара -->
+      <div style="padding:15px; background:#f8f9fa; border-bottom:1px solid #e0e0e0;">
+        <input type="text" id="searchProductToAdd" placeholder="🔍 Поиск товара..." oninput="scheduleFilterProductsToAdd()" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;">
+      </div>
+
+      <!-- Список товаров -->
+      <div id="productsToAddList" style="flex:1; overflow-y:auto; padding:15px;">
+        <div style="text-align:center; color:#999; padding:40px;">Загрузка товаров...</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+// ============ ИНИЦИАЛИЗАЦИЯ FIREBASE ============
+const firebaseConfig = {
+  apiKey: "AIzaSyBRQ6hH7kXq7ApJmqbvTG1EQsXwxWEnaGg",
+  authDomain: "svoysayet.firebaseapp.com",
+  projectId: "svoysayet",
+  storageBucket: "svoysayet.firebasestorage.app",
+  messagingSenderId: "450143000217",
+  appId: "1:450143000217:web:7495cefaea0b94966e8a08",
+  measurementId: "G-Y8VG9E29FY"
+};
+
+let db;
+let products = [];
+
+function initFirebase() {
+  try {
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    db = firebase.firestore();
+    console.log('Firebase инициализирован успешно');
+    return true;
+  } catch (error) {
+    console.error('Ошибка инициализации Firebase:', error);
+    Swal.fire('Ошибка', 'Не удалось подключиться к базе данных', 'error');
+    return false;
+  }
+}
+
+// Определение iOS
+const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+// Блокировка/разблокировка скролла
+function lockPageScroll() {
+  document.body.style.overflow = 'hidden';
+  document.body.style.position = 'fixed';
+  document.body.style.width = '100%';
+}
+
+function unlockPageScroll() {
+  document.body.style.overflow = '';
+  document.body.style.position = '';
+  document.body.style.width = '';
+}
+
+// ============ ЗАКРЫТИЕ ОКНА ============
+function closeOrdersManagementWindow() {
+  window.location.href = 'profile.html';
+}
+
+// ============ УПРАВЛЕНИЕ ЗАКАЗАМИ ============
+let ordersManagementAllOrders = null;
+let ordersManagementSearchDebounceTimer = null;
+let _ordersSearchComposing = false;
+
+function scheduleOrdersManagementSearch() {
+  if (_ordersSearchComposing) return;
+  clearTimeout(ordersManagementSearchDebounceTimer);
+  ordersManagementSearchDebounceTimer = setTimeout(() => {
+    renderOrdersManagementFromCache();
+  }, _isIOS ? 350 : 200);
+}
+
+function applyOrdersCombinedFilter() {
+  const combo = document.getElementById('ordersFilterCombined');
+  if (!combo) return;
+  const [status, date] = combo.value.split('|');
+  
+  const statusEl = document.getElementById('ordersFilterStatus');
+  const dateEl = document.getElementById('ordersFilterDate');
+  if (statusEl) statusEl.value = status;
+  if (dateEl) dateEl.value = date;
+  
+  updateOrdersManagementView();
+}
+
+function updateOrdersManagementView() {
+  if (Array.isArray(ordersManagementAllOrders)) {
+    renderOrdersManagementFromCache();
+  } else {
+    loadOrdersManagement(true);
+  }
+}
+
+// Нормализация русских статусов в английские коды
+const _statusNormalizeMap = {
+  'Новый': 'pending',
+  'новый': 'pending',
+  'В обработке': 'pending',
+  'Готовится': 'preparing',
+  'готовится': 'preparing',
+  'Логистика': 'logistics',
+  'логистика': 'logistics',
+  'Доставка': 'driver',
+  'доставка': 'driver',
+  'У курьера': 'driver',
+  'Доставлен': 'completed',
+  'доставлен': 'completed',
+  'Готов': 'completed',
+  'готов': 'completed',
+  'Отменён': 'cancelled',
+  'отменён': 'cancelled',
+  'Отменен': 'cancelled',
+  'отменен': 'cancelled'
+};
+
+function normalizeStatus(raw) {
+  if (!raw) return 'pending';
+  return _statusNormalizeMap[raw] || raw;
+}
+
+function renderOrdersManagementFromCache() {
+  const listDiv = document.getElementById('ordersManagementList');
+  if (!listDiv) return;
+
+  if (!Array.isArray(ordersManagementAllOrders)) {
+    listDiv.innerHTML = '<div style="text-align:center; color:#999; padding:40px;">⏳ Загрузка заказов...</div>';
+    return;
+  }
+
+  const comboEl = document.getElementById('ordersFilterCombined');
+  const searchEl = document.getElementById('ordersSearchClient');
+
+  let statusFilter = 'all';
+  let dateFilter = 'all';
+  if (comboEl && comboEl.value) {
+    const parts = comboEl.value.split('|');
+    statusFilter = parts[0] || 'all';
+    dateFilter = parts[1] || 'all';
+  }
+  const searchQuery = ((searchEl ? searchEl.value : '') || '').toLowerCase();
+
+  const now = Date.now();
+  const oneDayMs = 24 * 60 * 60 * 1000;
+
+  let orders = ordersManagementAllOrders.filter(order => {
+    const timestamp = order.timestamp || Date.now();
+
+    let dateMatch = true;
+    if (dateFilter === 'today') {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      dateMatch = timestamp >= todayStart.getTime();
+    } else if (dateFilter === 'yesterday') {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const yesterdayStart = new Date(todayStart);
+      yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+      dateMatch = timestamp >= yesterdayStart.getTime() && timestamp < todayStart.getTime();
+    } else if (dateFilter === 'week') {
+      dateMatch = (now - timestamp) < (7 * oneDayMs);
+    } else if (dateFilter === 'month') {
+      dateMatch = (now - timestamp) < (30 * oneDayMs);
+    }
+
+    const status = normalizeStatus(order.status);
+    const statusMatch = statusFilter === 'all' || status === statusFilter;
+
+    const name = (order.name || '').toLowerCase();
+    const phone = (order.phone || '').toLowerCase();
+    const itemsText = (order.items || []).map(i => (i.title || '').toLowerCase()).join(' ');
+    const searchMatch = !searchQuery || name.includes(searchQuery) || phone.includes(searchQuery) || itemsText.includes(searchQuery);
+
+    return dateMatch && statusMatch && searchMatch;
+  });
+
+  orders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+  if (orders.length === 0) {
+    listDiv.innerHTML = '<div style="text-align:center; color:#999; padding:60px; font-size:16px;">🔍 Заказы не найдены</div>';
+    return;
+  }
+
+  listDiv.innerHTML = '';
+  orders.forEach((order, index) => {
+    const orderCard = createOrderCard(order, index);
+    listDiv.appendChild(orderCard);
+  });
+}
+
+async function loadOrdersManagement(forceRefresh = false) {
+  const listDiv = document.getElementById('ordersManagementList');
+  if (!listDiv) return;
+
+  if (!forceRefresh && Array.isArray(ordersManagementAllOrders)) {
+    renderOrdersManagementFromCache();
+    return;
+  }
+
+  listDiv.innerHTML = '<div style="text-align:center; color:#999; padding:40px;">⏳ Загрузка заказов...</div>';
+
+  try {
+    // Загружаем последние 200 заказов + отдельно ВСЕ pending (чтобы старые pending не терялись)
+    const [recentSnapshot, pendingSnapshot] = await Promise.all([
+      db.collection('orders').orderBy('timestamp', 'desc').limit(200).get(),
+      db.collection('orders').where('status', '==', 'pending').get()
+    ]);
+
+    if (recentSnapshot.empty && pendingSnapshot.empty) {
+      ordersManagementAllOrders = [];
+      listDiv.innerHTML = '<div style="text-align:center; color:#999; padding:60px; font-size:16px;">📭 Заказов пока нет</div>';
+      return;
+    }
+
+    const allMap = {};
+    recentSnapshot.forEach(doc => {
+      const data = doc.data();
+      allMap[doc.id] = { id: doc.id, ...data, timestamp: data.timestamp || Date.now() };
+    });
+    // Добавляем pending-заказы, которые могли не попасть в limit(200)
+    pendingSnapshot.forEach(doc => {
+      if (!allMap[doc.id]) {
+        const data = doc.data();
+        allMap[doc.id] = { id: doc.id, ...data, timestamp: data.timestamp || Date.now() };
+      }
+    });
+
+    ordersManagementAllOrders = Object.values(allMap);
+    renderOrdersManagementFromCache();
+  } catch (error) {
+    console.error('Ошибка загрузки заказов:', error);
+    listDiv.innerHTML = '<div style="text-align:center; color:#dc3545; padding:40px;">❌ Ошибка загрузки заказов</div>';
+  }
+}
+
+// Создать карточку заказа
+function createOrderCard(order, index) {
+  const card = document.createElement('div');
+  card.className = 'order-card';
+  card.style.cssText = 'background:#fff; border-radius:12px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,0.08); overflow:hidden;';
+  
+  const date = new Date(order.timestamp);
+  const dateStr = date.toLocaleDateString('ru-RU', {day:'2-digit', month:'short'}) + ', ' + date.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+  
+  const status = normalizeStatus(order.status);
+  const statusMap = {
+    pending: { icon: '🕐', text: 'Новый', color: '#ff9800', bg: '#fff3e0' },
+    preparing: { icon: '📦', text: 'Готовится', color: '#2196f3', bg: '#e3f2fd' },
+    logistics: { icon: '🚚', text: 'Логистика', color: '#9c27b0', bg: '#f3e5f5' },
+    driver: { icon: '🚗', text: 'Доставка', color: '#00bcd4', bg: '#e0f7fa' },
+    completed: { icon: '✓', text: 'Готов', color: '#4caf50', bg: '#e8f5e9' },
+    cancelled: { icon: '✕', text: 'Отменён', color: '#f44336', bg: '#ffebee' }
+  };
+  const st = statusMap[status] || statusMap.pending;
+  
+  const items = order.items || [];
+  const total = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+  const itemsCount = items.reduce((sum, i) => sum + i.qty, 0);
+  
+  card.innerHTML = `
+    <div style="display:flex; align-items:stretch;">
+      <!-- Левая полоса статуса -->
+      <div style="width:4px; background:${st.color};"></div>
+      
+      <!-- Основной контент -->
+      <div style="flex:1; padding:14px;">
+        <!-- Верхняя строка: клиент и статус -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+          <div style="flex:1;">
+            <div style="font-size:15px; font-weight:600; color:#1a1a1a; margin-bottom:2px;">
+              ${order.name || 'Без имени'}
+            </div>
+            <div style="font-size:13px; color:#666;">
+              ${order.phone || ''} ${order.address ? '• ' + order.address.substring(0,30) + (order.address.length > 30 ? '...' : '') : ''}
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+            <div style="display:flex; gap:4px; align-items:center;">
+              ${order.moneyCollected ? '<div style="background:#e8f5e9; color:#28a745; padding:4px 8px; border-radius:12px; font-size:11px; font-weight:600;">💰 Оплачено</div>' : ''}
+              <div style="background:${st.bg}; color:${st.color}; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600; display:flex; align-items:center; gap:4px;">
+                ${st.icon} ${st.text}
+              </div>
+            </div>
+            <div style="font-size:11px; color:#999;">${dateStr}</div>
+          </div>
+        </div>
+        
+        <!-- Товары и сумма -->
+        <div style="display:flex; align-items:center; gap:10px; padding:10px; background:#f8f9fa; border-radius:8px; margin-bottom:10px;">
+          <div style="flex:1;">
+            <span style="font-size:13px; color:#555;">
+              ${items.length > 0 ? items.slice(0,2).map(i => i.title).join(', ') + (items.length > 2 ? ' +' + (items.length - 2) : '') : 'Нет товаров'}
+            </span>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:15px; font-weight:700; color:#1a1a1a;">${total.toLocaleString()} с</div>
+            <div style="font-size:11px; color:#888;">${itemsCount} шт</div>
+          </div>
+        </div>
+        
+        <!-- Действия -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+          <select onchange="updateOrderStatus('${order.id}', this.value); this.blur();" style="padding:8px 10px; border:1px solid #e0e0e0; border-radius:6px; font-size:12px; background:#fff; cursor:pointer; color:#333;">
+            <option value="pending" ${status === 'pending' ? 'selected' : ''}>🕐 Новый</option>
+            <option value="preparing" ${status === 'preparing' ? 'selected' : ''}>📦 Готовится</option>
+            <option value="logistics" ${status === 'logistics' ? 'selected' : ''}>🚚 Логистика</option>
+            <option value="driver" ${status === 'driver' ? 'selected' : ''}>🚗 Доставка</option>
+            <option value="completed" ${status === 'completed' ? 'selected' : ''}>✓ Готов</option>
+            <option value="cancelled" ${status === 'cancelled' ? 'selected' : ''}>✕ Отменён</option>
+          </select>
+          <button onclick="openOrderItemsDetailModal('${order.id}', '${(order.name || '').replace(/'/g, "\\'")}', '${order.phone || ''}', '${dateStr}')" style="padding:8px 12px; background:#007bff; color:#fff; border:none; border-radius:6px; font-size:12px; cursor:pointer;">📋 Товары</button>
+          <button onclick="openAddItemToOrderModal('${order.id}')" style="padding:8px 12px; background:#17a2b8; color:#fff; border:none; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600;">➕ Добавить товар</button>
+          <button onclick="openEditOrderModal('${order.id}')" style="padding:8px 12px; background:#ff9800; color:#fff; border:none; border-radius:6px; font-size:12px; cursor:pointer;">✏️ Редактировать</button>
+          <div style="display:flex; gap:6px;">
+            <button onclick="exportOrderToExcel('${order.id}', '${(order.name || '').replace(/'/g, "\\'")}', '${order.phone || ''}')" style="flex:1; padding:8px 12px; background:#25d366; color:#fff; border:none; border-radius:6px; font-size:12px; cursor:pointer;">📤</button>
+            <button onclick="deleteOrder('${order.id}')" style="flex:1; padding:8px 12px; background:#f44336; color:#fff; border:none; border-radius:6px; font-size:12px; cursor:pointer;">🗑️</button>
+          </div>
+        </div>
+        
+        ${order.partner || order.referredBy ? `<div style="margin-top:8px;"><span style="font-size:11px; background:#e3f2fd; color:#1976d2; padding:3px 8px; border-radius:4px;">🤝 ${order.partner || order.referredBy}</span></div>` : ''}
+      </div>
+    </div>
+  `;
+  
+  return card;
+}
+
+// ===== Редактирование заказа =====
+let currentEditOrderId = null;
+
+async function openEditOrderModal(orderId) {
+  currentEditOrderId = orderId;
+  const modal = document.getElementById('editOrderModal');
+  modal.style.display = 'flex';
+  lockPageScroll();
+
+  document.getElementById('editOrderModalInfo').textContent = '⏳ Загрузка...';
+  document.getElementById('editOrderName').value = '';
+  document.getElementById('editOrderPhone').value = '';
+  document.getElementById('editOrderAddress').value = '';
+  document.getElementById('editOrderDriverName').value = '';
+  document.getElementById('editOrderDriverPhone').value = '';
+  document.getElementById('editOrderReferredBy').value = '';
+
+  try {
+    const orderDoc = await db.collection('orders').doc(orderId).get();
+    if (!orderDoc.exists) {
+      throw new Error('Заказ не найден');
+    }
+    const order = orderDoc.data() || {};
+    const date = new Date(order.timestamp || Date.now());
+    const dateStr = date.toLocaleDateString('ru-RU') + ' ' + date.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+    document.getElementById('editOrderModalInfo').textContent = `📅 ${dateStr}`;
+
+    document.getElementById('editOrderName').value = order.name || '';
+    document.getElementById('editOrderPhone').value = order.phone || '';
+    document.getElementById('editOrderAddress').value = order.address || '';
+    document.getElementById('editOrderDriverName').value = order.driverName || '';
+    document.getElementById('editOrderDriverPhone').value = order.driverPhone || '';
+    document.getElementById('editOrderReferredBy').value = order.referredBy || order.partner || '';
+  } catch (error) {
+    console.error('Ошибка загрузки заказа для редактирования:', error);
+    Swal.fire('Ошибка', error && error.message ? error.message : 'Не удалось загрузить заказ', 'error');
+    closeEditOrderModal();
+  }
+}
+
+function closeEditOrderModal() {
+  const modal = document.getElementById('editOrderModal');
+  modal.style.display = 'none';
+  unlockPageScroll();
+  currentEditOrderId = null;
+}
+
+async function saveEditOrder() {
+  if (!currentEditOrderId) return;
+
+  const name = (document.getElementById('editOrderName').value || '').trim();
+  const phone = (document.getElementById('editOrderPhone').value || '').trim();
+  const address = (document.getElementById('editOrderAddress').value || '').trim();
+  const driverName = (document.getElementById('editOrderDriverName').value || '').trim();
+  const driverPhone = (document.getElementById('editOrderDriverPhone').value || '').trim();
+  const referredBy = (document.getElementById('editOrderReferredBy').value || '').trim();
+
+  try {
+    await db.collection('orders').doc(currentEditOrderId).update({
+      name,
+      phone,
+      address,
+      driverName,
+      driverPhone,
+      referredBy
+    });
+
+    if (Array.isArray(ordersManagementAllOrders)) {
+      const order = ordersManagementAllOrders.find(o => o.id === currentEditOrderId);
+      if (order) {
+        order.name = name;
+        order.phone = phone;
+        order.address = address;
+        order.driverName = driverName;
+        order.driverPhone = driverPhone;
+        order.referredBy = referredBy;
+      }
+    }
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Заказ обновлен',
+      timer: 1400,
+      showConfirmButton: false
+    });
+
+    closeEditOrderModal();
+    renderOrdersManagementFromCache();
+  } catch (error) {
+    console.error('Ошибка сохранения заказа:', error);
+    Swal.fire('Ошибка', 'Не удалось сохранить изменения', 'error');
+  }
+}
+
+// Обновить статус заказа
+async function updateOrderStatus(orderId, newStatus) {
+  try {
+    // Получаем заказ для проверки текущего статуса и возврата товаров
+    const orderDoc = await db.collection('orders').doc(orderId).get();
+    if (!orderDoc.exists) {
+      Swal.fire('Ошибка', 'Заказ не найден', 'error');
+      return;
+    }
+    const orderData = orderDoc.data();
+    const oldStatus = orderData.status;
+
+    // Если переводим в "Отменён" и заказ ещё не был отменён — возвращаем товары на склад
+    if (newStatus === 'cancelled' && oldStatus !== 'cancelled') {
+      await returnStockFromOrder(orderData);
+    }
+
+    // Если отменённый заказ восстанавливают (из cancelled в другой статус) — не трогаем склад
+    await db.collection('orders').doc(orderId).update({ 
+      status: newStatus,
+      statusUpdatedAt: Date.now()
+    });
+    
+    if (Array.isArray(ordersManagementAllOrders)) {
+      const order = ordersManagementAllOrders.find(o => o.id === orderId);
+      if (order) {
+        order.status = newStatus;
+        order.statusUpdatedAt = Date.now();
+      }
+    }
+    
+    const statusTexts = {
+      pending: 'В обработке',
+      preparing: 'Готовится',
+      logistics: 'На логистике',
+      driver: 'У водителя',
+      completed: 'Доставлен',
+      cancelled: 'Отменен'
+    };
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'Статус обновлен!',
+      text: newStatus === 'cancelled' 
+        ? 'Заказ отменён. Товары возвращены на склад.' 
+        : `Заказ переведен в статус: ${statusTexts[newStatus]}`,
+      timer: 2000,
+      showConfirmButton: false
+    });
+    
+    renderOrdersManagementFromCache();
+    
+  } catch (error) {
+    console.error('Ошибка обновления статуса:', error);
+    Swal.fire('Ошибка', 'Не удалось обновить статус заказа: ' + error.message, 'error');
+    renderOrdersManagementFromCache();
+  }
+}
+
+// Кэш главного склада
+let _cachedPrimaryWhId = null;
+let _cachedPrimaryWhTime = 0;
+async function getCachedPrimaryWhId() {
+  const now = Date.now();
+  if (_cachedPrimaryWhId !== null && now - _cachedPrimaryWhTime < 60000) return _cachedPrimaryWhId;
+  try {
+    const doc = await db.collection('settings').doc('warehouse').get();
+    _cachedPrimaryWhId = doc.exists ? (doc.data().primaryWarehouseId || '') : '';
+  } catch(e) { _cachedPrimaryWhId = ''; }
+  _cachedPrimaryWhTime = now;
+  return _cachedPrimaryWhId;
+}
+
+// Возврат одного товара на склад (главный или по deductions)
+async function returnStockForItem(orderId, productId, qty) {
+  if (!productId || !qty || qty <= 0) return;
+  
+  // Параллельно читаем товар и заказ
+  const [productDoc, orderDoc] = await Promise.all([
+    db.collection('products').doc(productId).get(),
+    db.collection('orders').doc(orderId).get()
+  ]);
+  if (!productDoc.exists) return;
+  
+  const product = productDoc.data();
+  const ws = product.warehouseStock || {};
+  const orderData = orderDoc.exists ? orderDoc.data() : {};
+  const deductions = orderData.warehouseDeductions || {};
+  const itemDed = deductions[productId];
+
+  const updates = []; // Собираем промисы для параллельной записи
+
+  if (itemDed && typeof itemDed === 'object') {
+    let remaining = qty;
+    for (const whId of Object.keys(itemDed)) {
+      if (remaining <= 0) break;
+      const dedQty = itemDed[whId] || 0;
+      const returnQty = Math.min(remaining, dedQty);
+      ws[whId] = (ws[whId] || 0) + returnQty;
+      itemDed[whId] = dedQty - returnQty;
+      if (itemDed[whId] <= 0) delete itemDed[whId];
+      remaining -= returnQty;
+    }
+    if (remaining > 0) {
+      const primaryWhId = await getCachedPrimaryWhId();
+      const fallbackWh = primaryWhId || Object.keys(ws)[0];
+      if (fallbackWh) ws[fallbackWh] = (ws[fallbackWh] || 0) + remaining;
+    }
+
+    if (Object.keys(itemDed).length === 0) delete deductions[productId];
+    else deductions[productId] = itemDed;
+
+    if (orderDoc.exists) {
+      updates.push(db.collection('orders').doc(orderId).update({ 
+        warehouseDeductions: Object.keys(deductions).length > 0 ? deductions : null 
+      }));
+    }
+  } else {
+    const primaryWhId = await getCachedPrimaryWhId();
+    if (primaryWhId) {
+      ws[primaryWhId] = (ws[primaryWhId] || 0) + qty;
+    } else {
+      await db.collection('products').doc(productId).update({
+        stock: firebase.firestore.FieldValue.increment(qty)
+      });
+      return;
+    }
+  }
+
+  const newTotal = Object.values(ws).reduce((s, v) => s + (v || 0), 0);
+  updates.push(db.collection('products').doc(productId).update({ warehouseStock: ws, stock: newTotal }));
+  await Promise.all(updates);
+}
+
+// Списание одного товара со склада (главный → остальные)
+async function deductStockForItem(orderId, productId, qty) {
+  if (!productId || !qty || qty <= 0) return;
+
+  // Параллельно: товар + главный склад + заказ
+  const [productDoc, primaryWhId, orderDoc] = await Promise.all([
+    db.collection('products').doc(productId).get(),
+    getCachedPrimaryWhId(),
+    db.collection('orders').doc(orderId).get()
+  ]);
+  if (!productDoc.exists) return;
+
+  const product = productDoc.data();
+  const ws = product.warehouseStock || {};
+
+  let remaining = qty;
+  const itemDeductions = {};
+
+  // Сначала с главного склада
+  if (primaryWhId && (ws[primaryWhId] || 0) > 0) {
+    const deduct = Math.min(remaining, ws[primaryWhId]);
+    ws[primaryWhId] -= deduct;
+    remaining -= deduct;
+    itemDeductions[primaryWhId] = deduct;
+  }
+
+  // Потом с остальных
+  if (remaining > 0) {
+    const otherWh = Object.entries(ws)
+      .filter(([whId, whQty]) => whQty > 0 && whId !== primaryWhId)
+      .sort((a, b) => b[1] - a[1]);
+    for (const [whId, whQty] of otherWh) {
+      if (remaining <= 0) break;
+      const deduct = Math.min(remaining, whQty);
+      ws[whId] -= deduct;
+      remaining -= deduct;
+      itemDeductions[whId] = deduct;
+    }
+  }
+
+  const newTotal = Object.values(ws).reduce((s, v) => s + (v || 0), 0);
+  const updates = [db.collection('products').doc(productId).update({ warehouseStock: ws, stock: newTotal })];
+
+  // Обновляем warehouseDeductions в заказе
+  if (Object.keys(itemDeductions).length > 0 && orderDoc.exists) {
+    const orderData = orderDoc.data();
+    const deductions = orderData.warehouseDeductions || {};
+    if (deductions[productId]) {
+      for (const [whId, dedQty] of Object.entries(itemDeductions)) {
+        deductions[productId][whId] = (deductions[productId][whId] || 0) + dedQty;
+      }
+    } else {
+      deductions[productId] = itemDeductions;
+    }
+    updates.push(db.collection('orders').doc(orderId).update({ warehouseDeductions: deductions }));
+  }
+
+  await Promise.all(updates);
+}
+
+// Возврат товаров на склад из заказа
+async function returnStockFromOrder(orderData) {
+  const deductions = orderData.warehouseDeductions || {};
+  const items = orderData.items || [];
+  if (!items.length) return;
+
+  const primaryWhId = await getCachedPrimaryWhId();
+
+  const batch = db.batch();
+
+  // Собираем все productId: из items + из deductions
+  const allProductIds = new Set();
+  items.forEach(i => { if (i.id) allProductIds.add(i.id); });
+  Object.keys(deductions).forEach(pid => allProductIds.add(pid));
+
+  // Параллельно читаем все товары
+  const productIds = [...allProductIds];
+  const productDocs = await Promise.all(
+    productIds.map(pid => db.collection('products').doc(pid).get())
+  );
+
+  for (let idx = 0; idx < productIds.length; idx++) {
+    const productId = productIds[idx];
+    const productDoc = productDocs[idx];
+    if (!productDoc.exists) continue;
+    const product = productDoc.data();
+    const ws = product.warehouseStock || {};
+
+    const itemDed = deductions[productId];
+    const item = items.find(i => i.id === productId);
+    let returnQty = 0;
+
+    if (itemDed && typeof itemDed === 'object' && Object.keys(itemDed).length > 0) {
+      // Есть данные о складах — возвращаем на те же склады
+      for (const [whId, qty] of Object.entries(itemDed)) {
+        ws[whId] = (ws[whId] || 0) + qty;
+        returnQty += qty;
+      }
+    } else if (item && item.qty > 0) {
+      // Нет deductions — возвращаем на главный склад
+      returnQty = item.qty;
+      if (primaryWhId) {
+        ws[primaryWhId] = (ws[primaryWhId] || 0) + returnQty;
+      } else {
+        batch.update(db.collection('products').doc(productId), {
+          stock: firebase.firestore.FieldValue.increment(returnQty)
+        });
+        continue;
+      }
+    }
+
+    if (returnQty > 0) {
+      const newTotal = Object.values(ws).reduce((s, v) => s + (v || 0), 0);
+      batch.update(db.collection('products').doc(productId), { 
+        warehouseStock: ws, 
+        stock: newTotal 
+      });
+
+      // Движение: возврат
+      const movRef = db.collection('warehouseMovements').doc();
+      batch.set(movRef, {
+        productId,
+        productTitle: item ? item.title : product.title || '',
+        warehouseId: (itemDed ? Object.keys(itemDed)[0] : primaryWhId) || '',
+        warehouseName: '',
+        type: 'return',
+        qty: returnQty,
+        direction: 'in',
+        oldQty: 0,
+        newQty: returnQty,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        note: 'Возврат при отмене заказа'
+      });
+    }
+  }
+
+  await batch.commit();
+}
+
+// Удалить заказ
+async function deleteOrder(orderId) {
+  console.log('deleteOrder вызвана, orderId:', orderId);
+  
+  const result = await Swal.fire({
+    title: 'Удалить заказ?',
+    html: 'Вы действительно хотите удалить весь заказ?<br><small style="color:#dc3545;">⚠️ Это действие нельзя отменить!</small>',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc3545',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: '🗑️ Да, удалить',
+    cancelButtonText: 'Отмена'
+  });
+  
+  console.log('Результат Swal:', result);
+  
+  if (!result.isConfirmed) return;
+  
+  try {
+    // Возвращаем товары на склад перед удалением, если заказ не был отменён
+    const orderDoc = await db.collection('orders').doc(orderId).get();
+    if (orderDoc.exists) {
+      const orderData = orderDoc.data();
+      if (orderData.status !== 'cancelled') {
+        await returnStockFromOrder(orderData);
+      }
+    }
+
+    await db.collection('orders').doc(orderId).delete();
+    
+    if (Array.isArray(ordersManagementAllOrders)) {
+      const index = ordersManagementAllOrders.findIndex(o => o.id === orderId);
+      if (index !== -1) {
+        ordersManagementAllOrders.splice(index, 1);
+      }
+    }
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'Заказ удален!',
+      text: 'Товары возвращены на склад.',
+      timer: 1500,
+      showConfirmButton: false
+    });
+    
+    renderOrdersManagementFromCache();
+    
+  } catch (error) {
+    console.error('Ошибка удаления заказа:', error);
+    Swal.fire('Ошибка', 'Не удалось удалить заказ', 'error');
+  }
+}
+
+// ===== МОДАЛЬНОЕ ОКНО ТОВАРОВ ЗАКАЗА =====
+
+function buildOrderItemsDetailTableHTML(orderId, items) {
+  let html = '<div class="order-items-cards">';
+
+  items.forEach((item, idx) => {
+    const itemTotal = (item.price || 0) * (item.qty || 0);
+    const itemPhoto = item.image || item.photo || '';
+    
+    html += `
+      <div class="order-item-card" style="padding:10px; display:flex; gap:10px; align-items:flex-start;">
+        ${itemPhoto ? `<img src="${itemPhoto}" style="width:50px; height:50px; object-fit:cover; border-radius:6px; flex-shrink:0;">` : '<div style="width:50px; height:50px; background:#f0f0f0; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0;">📦</div>'}
+        <div style="flex:1; min-width:0;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:8px;">
+            <div style="font-weight:600; font-size:14px; color:#333; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.title || 'Товар'}</div>
+            <button onclick="deleteOrderItemFromModal('${orderId}', ${idx})" style="padding:4px 8px; background:#dc3545; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px; flex-shrink:0;">
+              🗑️
+            </button>
+          </div>
+          ${item.variantName ? `<div style="font-size:11px; color:#7b1fa2; background:#f3e5f5; padding:2px 6px; border-radius:4px; margin-bottom:6px; display:inline-block;">🎨 ${item.variantName}</div>` : ''}
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <input type="number"
+              id="itemQty_${orderId}_${idx}"
+              value="${item.qty}"
+              min="0"
+              oninput="updateOrderItemQtyManagement('${orderId}', ${idx}, this.value)"
+              style="width:50px; padding:4px; border:1px solid #ddd; border-radius:4px; text-align:center; font-size:13px;">
+            <span style="color:#666; font-size:12px;" data-price="${item.price}" data-product-id="${item.id || ''}">× ${item.price}</span>
+            <div style="margin-left:auto; font-weight:700; color:#007bff; font-size:15px;" id="itemSum_${orderId}_${idx}">${itemTotal.toFixed(0)} сом</div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  html += '</div>';
+  return html;
+}
+
+async function openOrderItemsDetailModal(orderId, clientName, clientPhone, dateStr) {
+  const modal = document.getElementById('orderItemsDetailModal');
+  modal.style.display = 'flex';
+  lockPageScroll();
+  
+  document.getElementById('orderItemsDetailTitle').textContent = `📦 Товары в заказе`;
+  document.getElementById('orderItemsDetailInfo').textContent = `👤 ${clientName} ${clientPhone ? '(' + clientPhone + ')' : ''} • 📅 ${dateStr}`;
+  
+  const contentDiv = document.getElementById('orderItemsDetailContent');
+  contentDiv.innerHTML = '<div style="text-align:center; color:#999; padding:40px;">⏳ Загрузка товаров...</div>';
+  
+  try {
+    const orderDoc = await db.collection('orders').doc(orderId).get();
+    
+    if (!orderDoc.exists) {
+      contentDiv.innerHTML = '<div style="text-align:center; color:#dc3545; padding:40px;">❌ Заказ не найден</div>';
+      return;
+    }
+    
+    const orderData = orderDoc.data();
+    let items = orderData.items || [];
+    
+    if (items.length === 0) {
+      contentDiv.innerHTML = '<div style="text-align:center; color:#999; padding:40px;">📭 В заказе нет товаров</div>';
+      return;
+    }
+    
+    // Подгрузить фото для товаров без image
+    const itemsWithoutPhoto = items.filter(i => !i.image && !i.photo && i.id);
+    if (itemsWithoutPhoto.length > 0) {
+      const productIds = [...new Set(itemsWithoutPhoto.map(i => i.id))];
+      const photoMap = {};
+      
+      // Загружаем фото параллельно
+      const productPromises = productIds.map(pid => 
+        db.collection('products').doc(pid).get().then(doc => {
+          if (doc.exists) {
+            const data = doc.data();
+            photoMap[pid] = data.image || data.photo || '';
+          }
+        }).catch(() => {})
+      );
+      await Promise.all(productPromises);
+      
+      // Проставляем фото в items
+      items = items.map(item => {
+        if (!item.image && !item.photo && item.id && photoMap[item.id]) {
+          return { ...item, image: photoMap[item.id] };
+        }
+        return item;
+      });
+    }
+    
+    const total = items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    
+    contentDiv.innerHTML = '';
+    
+    const tableDiv = document.createElement('div');
+    tableDiv.className = 'order-items-detail-box';
+    tableDiv.style.cssText = 'background:white; border-radius:8px; overflow:hidden; box-shadow:0 2px 4px rgba(0,0,0,0.1);';
+    tableDiv.innerHTML = buildOrderItemsDetailTableHTML(orderId, items);
+    contentDiv.appendChild(tableDiv);
+
+    const totalDiv = document.createElement('div');
+    totalDiv.id = 'orderItemsDetailTotal';
+    totalDiv.style.cssText = 'margin-top:12px; background:#f8f9fa; border:1px solid #e0e0e0; border-radius:10px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; gap:12px;';
+    totalDiv.innerHTML = `
+      <div style="font-weight:700; color:#333;">Итого</div>
+      <div style="font-size:18px; font-weight:800; color:#28a745; white-space:nowrap;">${total.toFixed(2)} сом</div>
+    `;
+    contentDiv.appendChild(totalDiv);
+    
+    const addBtn = document.getElementById('orderItemsAddBtn');
+    addBtn.onclick = () => {
+      closeOrderItemsDetailModal();
+      openAddItemToOrderModal(orderId);
+    };
+    
+  } catch (error) {
+    console.error('Ошибка загрузки товаров:', error);
+    contentDiv.innerHTML = '<div style="text-align:center; color:#dc3545; padding:40px;">❌ Ошибка загрузки товаров</div>';
+  }
+}
+
+function closeOrderItemsDetailModal() {
+  document.getElementById('orderItemsDetailModal').style.display = 'none';
+  unlockPageScroll();
+}
+
+// Обновить количество товара в заказе
+// Дебаунс для предотвращения частых запросов
+let updateQtyTimeout = null;
+
+async function updateOrderItemQtyManagement(orderId, itemIndex, newQty) {
+  const qty = parseInt(newQty) || 0;
+  
+  // Моментально обновляем UI
+  const cardEl = document.getElementById(`itemQty_${orderId}_${itemIndex}`)?.closest('.order-item-card');
+  if (cardEl) {
+    const priceEl = cardEl.querySelector('[data-price]');
+    const sumEl = document.getElementById(`itemSum_${orderId}_${itemIndex}`);
+    
+    if (priceEl && sumEl) {
+      let price = parseInt(priceEl.dataset.price) || 0;
+      
+      // Проверяем оптовую цену из Firebase товара
+      const itemId = priceEl.dataset.productId;
+      if (itemId) {
+        try {
+          const prodDoc = await db.collection('products').doc(itemId).get();
+          if (prodDoc.exists) {
+            const prod = prodDoc.data();
+            if (prod.optQty && qty >= prod.optQty && prod.optPrice) {
+              price = prod.optPrice;
+            } else {
+              price = prod.price || price;
+            }
+            priceEl.dataset.price = price;
+            priceEl.textContent = '× ' + price;
+          }
+        } catch(e) { /* используем текущую цену */ }
+      }
+      
+      const itemTotal = price * qty;
+      sumEl.textContent = itemTotal + ' сом';
+    }
+    
+    // Моментально пересчитываем общий итог
+    let grandTotal = 0;
+    const allSumEls = document.querySelectorAll('[id^="itemSum_"]');
+    allSumEls.forEach(el => {
+      const match = el.textContent.match(/(\d+)/);
+      if (match) grandTotal += parseInt(match[1]);
+    });
+    
+    const totalDiv = document.getElementById('orderItemsDetailTotal');
+    if (totalDiv) {
+      totalDiv.innerHTML = `
+        <div style="font-weight:700; color:#333;">Итого</div>
+        <div style="font-size:18px; font-weight:800; color:#28a745; white-space:nowrap;">${grandTotal} сом</div>
+      `;
+    }
+  }
+  
+  // Дебаунс: сохраняем в Firebase только после паузы в вводе
+  clearTimeout(updateQtyTimeout);
+  updateQtyTimeout = setTimeout(async () => {
+    try {
+      const orderDoc = await db.collection('orders').doc(orderId).get();
+      if (!orderDoc.exists) return;
+      
+      const orderData = orderDoc.data();
+      const items = orderData.items || [];
+      
+      if (items[itemIndex]) {
+        const oldQty = items[itemIndex].qty || 0;
+        items[itemIndex].qty = qty;
+        
+        // Пересчитываем цену с учётом оптовой
+        const itemId = items[itemIndex].id;
+        if (itemId) {
+          try {
+            const prodDoc = await db.collection('products').doc(itemId).get();
+            if (prodDoc.exists) {
+              const prod = prodDoc.data();
+              if (prod.optQty && qty >= prod.optQty && prod.optPrice) {
+                items[itemIndex].price = prod.optPrice;
+              } else {
+                items[itemIndex].price = prod.price || items[itemIndex].price;
+              }
+            }
+          } catch(e) { /* оставляем текущую цену */ }
+        }
+      
+        const total = items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      
+        // Сначала сохраняем items/total
+        await db.collection('orders').doc(orderId).update({ items, total });
+
+        // Потом корректируем склад (функция сама обновит warehouseDeductions)
+        const diff = qty - oldQty;
+        if (diff > 0 && itemId) {
+          await deductStockForItem(orderId, itemId, diff);
+        } else if (diff < 0 && itemId) {
+          await returnStockForItem(orderId, itemId, Math.abs(diff));
+        }
+      } else {
+        const total = items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        await db.collection('orders').doc(orderId).update({ items, total });
+      }
+      
+      if (Array.isArray(ordersManagementAllOrders)) {
+        const order = ordersManagementAllOrders.find(o => o.id === orderId);
+        if (order) {
+          order.items = items;
+          order.total = total;
+        }
+      }
+      
+      renderOrdersManagementFromCache();
+      
+    } catch (error) {
+      console.error('Ошибка обновления количества:', error);
+    }
+  }, 500);
+}
+
+// Удалить товар из заказа через модальное окно
+async function deleteOrderItemFromModal(orderId, itemIndex) {
+  const result = await Swal.fire({
+    title: 'Удалить товар?',
+    text: 'Удалить этот товар из заказа?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc3545',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'Да, удалить',
+    cancelButtonText: 'Отмена'
+  });
+  
+  if (!result.isConfirmed) return;
+  
+  try {
+    const orderDoc = await db.collection('orders').doc(orderId).get();
+    if (!orderDoc.exists) {
+      throw new Error('Заказ не найден');
+    }
+    
+    const orderData = orderDoc.data();
+    const items = orderData.items || [];
+    
+    // Запоминаем удаляемый товар для возврата на склад
+    const removedItem = items[itemIndex];
+    items.splice(itemIndex, 1);
+
+    // Возвращаем удалённый товар на склад
+    if (removedItem && removedItem.id && removedItem.qty > 0 && orderData.status !== 'cancelled') {
+      await returnStockForItem(orderId, removedItem.id, removedItem.qty);
+    }
+    
+    if (items.length === 0) {
+      await Swal.fire({
+        title: 'Заказ пуст',
+        text: 'В заказе не осталось товаров. Заказ будет удален.',
+        icon: 'warning',
+        confirmButtonText: 'Понятно'
+      });
+      await db.collection('orders').doc(orderId).delete();
+      
+      if (Array.isArray(ordersManagementAllOrders)) {
+        const idx = ordersManagementAllOrders.findIndex(o => o.id === orderId);
+        if (idx !== -1) ordersManagementAllOrders.splice(idx, 1);
+      }
+      
+      closeOrderItemsDetailModal();
+      renderOrdersManagementFromCache();
+    } else {
+      const total = items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      await db.collection('orders').doc(orderId).update({ items, total });
+      
+      if (Array.isArray(ordersManagementAllOrders)) {
+        const order = ordersManagementAllOrders.find(o => o.id === orderId);
+        if (order) {
+          order.items = items;
+          order.total = total;
+        }
+      }
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Товар удален',
+        timer: 1500,
+        showConfirmButton: false
+      });
+      
+      const clientName = document.getElementById('orderItemsDetailInfo').textContent.split('👤')[1].split('•')[0].trim();
+      const dateStr = document.getElementById('orderItemsDetailInfo').textContent.split('📅')[1].trim();
+      await openOrderItemsDetailModal(orderId, clientName, '', dateStr);
+    }
+    
+  } catch (error) {
+    console.error('Ошибка удаления товара:', error);
+    Swal.fire('Ошибка', 'Не удалось удалить товар', 'error');
+  }
+}
+
+// ===== ОБЪЕДИНЕНИЕ ЗАКАЗОВ =====
+
+async function openMergeOrdersModal() {
+  console.log('openMergeOrdersModal вызвана');
+  console.log('ordersManagementAllOrders:', ordersManagementAllOrders);
+  
+  if (!Array.isArray(ordersManagementAllOrders) || ordersManagementAllOrders.length < 2) {
+    Swal.fire({
+      icon: 'info',
+      title: 'Нет заказов для объединения',
+      text: 'Для объединения нужно минимум 2 заказа',
+      confirmButtonText: 'Понятно'
+    });
+    return;
+  }
+
+  const groups = {};
+  
+  ordersManagementAllOrders.forEach(order => {
+    const name = (order.name || '').toLowerCase().trim();
+    const phone = (order.phone || '').replace(/\D/g, '').trim();
+    const orderDate = new Date(order.timestamp || Date.now());
+    const dateKey = orderDate.toLocaleDateString('ru-RU');
+    const groupKey = `${name}|${phone}|${dateKey}`;
+    
+    if (!groups[groupKey]) {
+      groups[groupKey] = {
+        name: order.name || 'Без имени',
+        phone: order.phone || '',
+        date: dateKey,
+        orders: []
+      };
+    }
+    groups[groupKey].orders.push(order);
+  });
+
+  console.log('Все группы:', groups);
+  console.log('Количество групп:', Object.keys(groups).length);
+
+  const mergeableGroups = Object.values(groups).filter(g => g.orders.length >= 2);
+  
+  console.log('Группы для объединения (>=2 заказов):', mergeableGroups);
+  console.log('Количество групп для объединения:', mergeableGroups.length);
+
+  if (mergeableGroups.length === 0) {
+    Swal.fire({
+      icon: 'info',
+      title: 'Нечего объединять',
+      text: 'Не найдено клиентов с несколькими заказами за один день',
+      confirmButtonText: 'Понятно'
+    });
+    return;
+  }
+
+  let html = '<div style="max-height:400px; overflow-y:auto;">';
+  
+  mergeableGroups.forEach((group, idx) => {
+    const totalOrders = group.orders.length;
+    const totalItems = group.orders.reduce((sum, o) => sum + (o.items || []).reduce((s, i) => s + i.qty, 0), 0);
+    const totalSum = group.orders.reduce((sum, o) => sum + (o.items || []).reduce((s, i) => s + (i.price * i.qty), 0), 0);
+    const orderIdsStr = group.orders.map(o => o.id).join(',');
+    
+    html += `
+      <div style="background:#f8f9fa; border:2px solid #9c27b0; border-radius:10px; padding:15px; margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div>
+            <div style="font-weight:700; font-size:16px; color:#333;">👤 ${group.name}</div>
+            <div style="color:#666;">📞 ${group.phone || 'Без телефона'}</div>
+            <div style="font-size:13px; color:#888;">📅 ${group.date}</div>
+            <div style="margin-top:8px;">
+              <span style="background:#9c27b0; color:white; padding:3px 8px; border-radius:4px;">${totalOrders} заказа</span>
+              <span style="background:#007bff; color:white; padding:3px 8px; border-radius:4px; margin-left:5px;">${totalItems} шт</span>
+              <span style="background:#28a745; color:white; padding:3px 8px; border-radius:4px; margin-left:5px;">${totalSum.toFixed(0)} сом</span>
+            </div>
+          </div>
+          <button class="merge-btn" data-ids="${orderIdsStr}" style="padding:10px 20px; background:linear-gradient(90deg, #9c27b0, #673ab7); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:700;">
+            🔗 Объединить
+          </button>
+        </div>
+      </div>
+    `;
+  });
+  
+  html += '</div>';
+
+  console.log('Показываем модальное окно с группами:', mergeableGroups.length);
+  console.log('HTML для модального окна:', html);
+  
+  Swal.fire({
+    title: '🔗 Объединение заказов',
+    html: html,
+    width: 600,
+    showConfirmButton: false,
+    showCloseButton: true,
+    backdrop: true,
+    customClass: {
+      container: 'swal-merge-container'
+    },
+    didOpen: () => {
+      // Устанавливаем z-index выше ordersManagementWindow (9650)
+      const swalContainer = document.querySelector('.swal-merge-container');
+      if (swalContainer) {
+        swalContainer.style.zIndex = '99999';
+      }
+      
+      console.log('didOpen вызван');
+      const buttons = document.querySelectorAll('.merge-btn');
+      console.log('Найдено кнопок .merge-btn:', buttons.length);
+      
+      buttons.forEach((btn, index) => {
+        console.log('Привязываем обработчик к кнопке', index, 'ids:', btn.dataset.ids);
+        btn.addEventListener('click', function() {
+          const ids = this.dataset.ids;
+          console.log('Нажата кнопка объединения, ids:', ids);
+          Swal.close();
+          setTimeout(() => mergeClientOrders(ids), 150);
+        });
+      });
+    }
+  });
+}
+
+async function mergeClientOrders(orderIds) {
+  console.log('mergeClientOrders вызвана с ids:', orderIds);
+  const ids = orderIds.split(',');
+  
+  if (ids.length < 2) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Ошибка',
+      text: 'Нужно минимум 2 заказа для объединения',
+      customClass: { container: 'swal-high-zindex' },
+      didOpen: () => { document.querySelector('.swal-high-zindex').style.zIndex = '99999'; }
+    });
+    return;
+  }
+
+  const result = await Swal.fire({
+    title: 'Объединить заказы?',
+    html: `<p>Все товары из ${ids.length} заказов будут объединены в один.</p>
+           <p style="color:#dc3545; font-size:13px;">⚠️ Остальные заказы будут удалены.</p>`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#9c27b0',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: '🔗 Да, объединить',
+    cancelButtonText: 'Отмена',
+    customClass: { container: 'swal-high-zindex' },
+    didOpen: () => { document.querySelector('.swal-high-zindex').style.zIndex = '99999'; }
+  });
+
+  console.log('Результат подтверждения:', result);
+
+  if (!result.isConfirmed) return;
+
+  try {
+    Swal.fire({
+      title: 'Объединение...',
+      text: 'Пожалуйста, подождите',
+      allowOutsideClick: false,
+      customClass: { container: 'swal-high-zindex' },
+      didOpen: () => { 
+        document.querySelector('.swal-high-zindex').style.zIndex = '99999';
+        Swal.showLoading(); 
+      }
+    });
+
+    const orders = [];
+    for (const id of ids) {
+      const doc = await db.collection('orders').doc(id).get();
+      if (doc.exists) {
+        orders.push({ id: doc.id, ...doc.data() });
+      }
+    }
+
+    if (orders.length < 2) {
+      throw new Error('Не удалось загрузить заказы');
+    }
+
+    orders.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+    const mainOrder = orders[0];
+    const otherOrders = orders.slice(1);
+
+    let mergedItems = [...(mainOrder.items || [])];
+    
+    for (const order of otherOrders) {
+      const orderItems = order.items || [];
+      
+      for (const item of orderItems) {
+        const existingIndex = mergedItems.findIndex(mi => 
+          mi.title === item.title && mi.price === item.price
+        );
+        
+        if (existingIndex >= 0) {
+          mergedItems[existingIndex].qty += item.qty;
+        } else {
+          mergedItems.push({ ...item });
+        }
+      }
+    }
+
+    const newTotal = mergedItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+    await db.collection('orders').doc(mainOrder.id).update({
+      items: mergedItems,
+      total: newTotal,
+      mergedFrom: otherOrders.map(o => o.id),
+      mergedAt: Date.now()
+    });
+
+    for (const order of otherOrders) {
+      await db.collection('orders').doc(order.id).delete();
+    }
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Заказы объединены!',
+      html: `<p>Объединено ${orders.length} заказов в один.</p>
+             <p>Всего товаров: <strong>${mergedItems.reduce((s, i) => s + i.qty, 0)} шт</strong></p>
+             <p>Общая сумма: <strong>${newTotal.toFixed(0)} сом</strong></p>`,
+      confirmButtonText: 'Отлично!',
+      customClass: { container: 'swal-high-zindex' },
+      didOpen: () => { document.querySelector('.swal-high-zindex').style.zIndex = '99999'; }
+    });
+
+    await loadOrdersManagement(true);
+
+  } catch (error) {
+    console.error('Ошибка объединения заказов:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Ошибка',
+      text: 'Не удалось объединить заказы: ' + (error.message || ''),
+      customClass: { container: 'swal-high-zindex' },
+      didOpen: () => { document.querySelector('.swal-high-zindex').style.zIndex = '99999'; }
+    });
+  }
+}
+
+// ===== ДОБАВЛЕНИЕ ТОВАРА В ЗАКАЗ =====
+
+let currentOrderIdForAddItem = null;
+let productsToAddCardsCache = null;
+let productsToAddLastQuery = '';
+let productsToAddFilterDebounceTimer = null;
+let _productsToAddComposing = false;
+
+function scheduleFilterProductsToAdd() {
+  if (_productsToAddComposing) return;
+  clearTimeout(productsToAddFilterDebounceTimer);
+  productsToAddFilterDebounceTimer = setTimeout(() => {
+    filterProductsToAdd();
+  }, _isIOS ? 350 : 120);
+}
+
+async function openAddItemToOrderModal(orderId) {
+  currentOrderIdForAddItem = orderId;
+  document.getElementById('addItemToOrderModal').style.display = 'flex';
+  lockPageScroll();
+  
+  await loadProductsToAdd();
+}
+
+function closeAddItemToOrderModal() {
+  document.getElementById('addItemToOrderModal').style.display = 'none';
+  unlockPageScroll();
+  currentOrderIdForAddItem = null;
+  document.getElementById('searchProductToAdd').value = '';
+  productsToAddLastQuery = '';
+}
+
+async function loadProductsToAdd() {
+  const listDiv = document.getElementById('productsToAddList');
+  listDiv.innerHTML = '<div style="text-align:center; color:#999; padding:40px;">⏳ Загрузка товаров...</div>';
+  
+  try {
+    const productsSnapshot = await db.collection('products').get();
+    
+    if (productsSnapshot.empty) {
+      listDiv.innerHTML = '<div style="text-align:center; color:#999; padding:40px;">📭 Товаров нет</div>';
+      return;
+    }
+    
+    listDiv.innerHTML = '';
+    productsToAddCardsCache = null;
+    
+    productsSnapshot.forEach(doc => {
+      const product = doc.data();
+      const productCard = document.createElement('div');
+      productCard.className = 'product-to-add-card';
+      productCard.dataset.title = (product.title || product.name || '').toLowerCase();
+      productCard.style.cssText = 'background:white; border:1px solid #e0e0e0; border-radius:8px; padding:12px; margin-bottom:10px; cursor:pointer; transition:all 0.2s;';
+      
+      const productName = product.title || product.name || 'Без названия';
+      const productPrice = product.price || 0;
+      const productCostPrice = product.costPrice || 0;
+      const productPhoto = product.image || product.photo;
+      
+      const optQty = product.optQty || 0;
+      const optPrice = product.optPrice || 0;
+      
+      productCard.innerHTML = `
+        <div style="display:flex; gap:12px; align-items:center;">
+          ${productPhoto ? `<img src="${productPhoto}" style="width:60px; height:60px; object-fit:cover; border-radius:6px;">` : '<div style="width:60px; height:60px; background:#f0f0f0; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:24px;">📦</div>'}
+          <div style="flex:1;">
+            <div style="font-weight:600; margin-bottom:4px;">${productName}</div>
+            <div style="font-size:13px; color:#666;">💰 ${productPrice} сом</div>
+            ${optQty && optPrice ? `<div style="font-size:12px; color:#e65100; margin-top:2px;">📦 Опт от ${optQty} шт: ${optPrice} сом</div>` : ''}
+            ${product.category ? `<div style="font-size:12px; color:#888; margin-top:2px;">📁 ${product.category}</div>` : ''}
+          </div>
+          <button onclick="askQtyAndAddProduct('${doc.id}', '${productName.replace(/'/g, "\\'")}', ${productPrice}, ${productCostPrice}, '${(productPhoto || '').replace(/'/g, "\\'")}', ${optQty}, ${optPrice}); event.stopPropagation();" style="padding:8px 16px; background:#17a2b8; color:white; border:none; border-radius:6px; cursor:pointer; font-size:13px; font-weight:600; white-space:nowrap;">
+            ➕ Добавить
+          </button>
+        </div>
+      `;
+      
+      productCard.onmouseenter = () => productCard.style.background = '#f8f9fa';
+      productCard.onmouseleave = () => productCard.style.background = 'white';
+      
+      listDiv.appendChild(productCard);
+    });
+
+    productsToAddCardsCache = Array.from(listDiv.querySelectorAll('.product-to-add-card'));
+    scheduleFilterProductsToAdd();
+    
+  } catch (error) {
+    console.error('Ошибка загрузки товаров:', error);
+    listDiv.innerHTML = '<div style="text-align:center; color:#dc3545; padding:40px;">❌ Ошибка загрузки товаров</div>';
+  }
+}
+
+function filterProductsToAdd() {
+  const inputEl = document.getElementById('searchProductToAdd');
+  if (!inputEl) return;
+  const searchQuery = (inputEl.value || '').toLowerCase();
+
+  if (searchQuery === productsToAddLastQuery) return;
+  productsToAddLastQuery = searchQuery;
+
+  const cards = Array.isArray(productsToAddCardsCache)
+    ? productsToAddCardsCache
+    : Array.from(document.querySelectorAll('.product-to-add-card'));
+
+  cards.forEach(card => {
+    const title = card.dataset.title || '';
+    const shouldShow = title.includes(searchQuery);
+    const isHidden = card.style.display === 'none';
+    if (shouldShow && isHidden) card.style.display = 'block';
+    if (!shouldShow && !isHidden) card.style.display = 'none';
+  });
+}
+
+async function addProductToOrder(productId, productName, productPrice, productCostPrice, qty = 1, productPhoto = '', optQty = 0, optPrice = 0) {
+  if (!currentOrderIdForAddItem) {
+    Swal.fire('Ошибка', 'Не выбран заказ', 'error');
+    return;
+  }
+  
+  const orderId = currentOrderIdForAddItem;
+  
+  // Сразу закрываем окно и показываем уведомление (оптимистичный UI)
+  closeAddItemToOrderModal();
+  
+  Swal.fire({
+    icon: 'success',
+    title: 'Товар добавлен!',
+    text: `${productName} x${qty} добавлен в заказ`,
+    timer: 1200,
+    showConfirmButton: false
+  });
+  
+  // Выполняем обновление в фоне
+  try {
+    const orderDoc = await db.collection('orders').doc(orderId).get();
+    
+    if (!orderDoc.exists) {
+      console.error('Заказ не найден');
+      return;
+    }
+    
+    const orderData = orderDoc.data();
+    const items = orderData.items || [];
+    
+    const existingItemIndex = items.findIndex(item => item.id === productId);
+    
+    if (existingItemIndex !== -1) {
+      items[existingItemIndex].qty += qty;
+      // Пересчитываем цену с учётом оптовой
+      const totalQty = items[existingItemIndex].qty;
+      if (optQty && totalQty >= optQty && optPrice) {
+        items[existingItemIndex].price = optPrice;
+      } else {
+        items[existingItemIndex].price = productPrice;
+      }
+    } else {
+      // Определяем цену: оптовая или обычная
+      let finalPrice = productPrice;
+      if (optQty && qty >= optQty && optPrice) {
+        finalPrice = optPrice;
+      }
+      const newItem = {
+        id: productId,
+        title: productName,
+        price: finalPrice,
+        costPrice: productCostPrice,
+        qty: qty
+      };
+      if (productPhoto) {
+        newItem.image = productPhoto;
+      }
+      items.push(newItem);
+    }
+    
+    const total = items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    
+    await db.collection('orders').doc(orderId).update({
+      items,
+      total
+    });
+
+    // Списываем добавленный товар со склада
+    await deductStockForItem(orderId, productId, qty);
+    console.log('✅ Товар списан со склада:', productId, 'кол-во:', qty);
+    
+    if (Array.isArray(ordersManagementAllOrders)) {
+      const order = ordersManagementAllOrders.find(o => o.id === orderId);
+      if (order) {
+        order.items = items;
+        order.total = total;
+      }
+    }
+    
+    renderOrdersManagementFromCache();
+    
+  } catch (error) {
+    console.error('❌ Ошибка добавления товара:', error);
+    Swal.fire('Ошибка', 'Не удалось добавить товар: ' + error.message, 'error');
+  }
+}
+
+// Спросить количество перед добавлением
+async function askQtyAndAddProduct(productId, productName, productPrice, productCostPrice, productPhoto, optQty, optPrice) {
+  optQty = optQty || 0;
+  optPrice = optPrice || 0;
+  
+  const { value: qty } = await Swal.fire({
+    title: 'Количество',
+    html: `${productName}${optQty && optPrice ? `<br><small style="color:#e65100;">📦 Опт от ${optQty} шт: ${optPrice} сом</small>` : ''}`,
+    input: 'number',
+    inputValue: 1,
+    inputAttributes: {
+      min: 1,
+      max: 1000,
+      step: 1
+    },
+    showCancelButton: true,
+    confirmButtonText: 'Добавить',
+    cancelButtonText: 'Отмена',
+    confirmButtonColor: '#17a2b8',
+    inputValidator: (value) => {
+      if (!value || value < 1) {
+        return 'Введите количество';
+      }
+    }
+  });
+  
+  if (qty) {
+    addProductToOrder(productId, productName, productPrice, productCostPrice, parseInt(qty), productPhoto, optQty, optPrice);
+  }
+}
+
+// ===== ЭКСПОРТ ЗАКАЗА В TELEGRAM (3 файла: Excel + 2 PDF через Canvas) =====
+// Копия оригинального кода из orders.js с поддержкой пач/шт и коробок
+
+async function exportOrderToExcel(orderId, clientName, clientPhone) {
+  console.log('exportOrderToExcel вызвана, orderId:', orderId);
+  
+  Swal.fire({
+    title: 'Подготовка заказа...',
+    html: 'Загрузка данных...',
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
+  
+  try {
+    // Загружаем заказ
+    const orderDoc = await db.collection('orders').doc(orderId).get();
+    
+    if (!orderDoc.exists) {
+      throw new Error('Заказ не найден');
+    }
+    
+    const order = orderDoc.data();
+    const items = order.items || [];
+    
+    if (items.length === 0) {
+      Swal.fire('Ошибка', 'В заказе нет товаров', 'error');
+      return;
+    }
+    
+    // Загружаем все продукты для получения фото и данных
+    Swal.update({ html: 'Загрузка данных товаров...' });
+    const productsSnapshot = await db.collection('products').get();
+    const productsMap = {};
+    productsSnapshot.forEach(doc => {
+      productsMap[doc.id] = { id: doc.id, ...doc.data() };
+    });
+    console.log('Загружено продуктов:', Object.keys(productsMap).length);
+    
+    const date = new Date(order.timestamp || Date.now());
+    const dateStr = date.toLocaleDateString('ru-RU') + ' ' + date.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+    
+    let totalAmount = 0;
+    items.forEach(item => {
+      totalAmount += item.price * item.qty;
+    });
+    
+    const address = order.address || 'Не указан';
+    const driverName = order.driverName || '';
+    const driverPhone = order.driverPhone || '';
+    const hasDriver = driverName || driverPhone;
+    
+    // ===== 1. Создаем Excel файл =====
+    Swal.update({ html: 'Создание Excel файла (1/3)' });
+    
+    const excelData = [
+      ['ЗАКАЗ КЛИЕНТА'],
+      [''],
+      ['Клиент:', clientName],
+      ['Телефон:', clientPhone],
+      ['Адрес:', address],
+      ['Дата заказа:', dateStr]
+    ];
+    
+    if (hasDriver) {
+      excelData.push(['Водитель:', driverName || '-']);
+      excelData.push(['Тел. водителя:', driverPhone || '-']);
+    }
+    
+    excelData.push(['']);
+    excelData.push(['Название товара', 'Кол-во коробок', 'Ед. в коробке', 'Всего', 'Цена', 'Сумма']);
+    
+    items.forEach(item => {
+      const product = productsMap[item.id] || productsMap[item.productId] || {};
+      const isPack = item.isPack || product.isPack || false;
+      const unitLabel = isPack ? 'пач' : 'шт';
+      const unitsPerBox = item.unitsPerBox || product.unitsPerBox || 72;
+      
+      const boxCount = Math.floor(item.qty / unitsPerBox);
+      const remainingUnits = item.qty % unitsPerBox;
+      
+      let boxText = '';
+      if (boxCount > 0 && remainingUnits === 0) {
+        boxText = `${boxCount} кор`;
+      } else if (boxCount > 0 && remainingUnits > 0) {
+        boxText = `${boxCount} кор + ${remainingUnits} ${unitLabel}`;
+      } else {
+        boxText = `${item.qty} ${unitLabel}`;
+      }
+      
+      const titleWithVariant = item.variantName ? `${item.title} [${item.variantName}]` : (item.title || 'Товар');
+      
+      excelData.push([
+        titleWithVariant,
+        boxText,
+        `${unitsPerBox} ${unitLabel}`,
+        `${item.qty} ${unitLabel}`,
+        `${item.price} сом`,
+        `${item.qty * item.price} сом`
+      ]);
+    });
+    
+    excelData.push(['']);
+    excelData.push(['ИТОГО:', '', '', '', '', `${totalAmount} сом`]);
+    
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(excelData);
+    ws['!cols'] = [{ wch: 30 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 15 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'Заказ');
+    
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const excelBlob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    
+    // ===== 2. Создаем PDF #1 (Заказ для печати БЕЗ ФОТО) =====
+    Swal.update({ html: 'Создание PDF для печати (2/3)' });
+    
+    const { jsPDF } = window.jspdf;
+    const doc1 = new jsPDF();
+    const scale = 1.5;
+    let yPosition = 2;
+    
+    // Заголовок
+    const headerCanvas = document.createElement('canvas');
+    const headerCtx = headerCanvas.getContext('2d');
+    headerCanvas.width = 600 * scale;
+    headerCanvas.height = 50 * scale;
+    headerCtx.scale(scale, scale);
+    
+    headerCtx.fillStyle = 'white';
+    headerCtx.fillRect(0, 0, 600, 50);
+    headerCtx.fillStyle = 'black';
+    headerCtx.font = 'bold 24px Arial';
+    headerCtx.textAlign = 'center';
+    headerCtx.fillText('ЗАКАЗ (для печати)', 300, 35);
+    
+    const headerImage = headerCanvas.toDataURL('image/png');
+    doc1.addImage(headerImage, 'PNG', 20, yPosition, 170, 10);
+    yPosition += 11;
+    
+    // Информация о заказе в рамке
+    const infoHeight = hasDriver ? 170 : 120;
+    const infoCanvas = document.createElement('canvas');
+    const infoCtx = infoCanvas.getContext('2d');
+    infoCanvas.width = 700 * scale;
+    infoCanvas.height = infoHeight * scale;
+    infoCtx.scale(scale, scale);
+    
+    infoCtx.fillStyle = 'white';
+    infoCtx.fillRect(0, 0, 700, infoHeight);
+    infoCtx.strokeStyle = 'black';
+    infoCtx.lineWidth = 2;
+    infoCtx.strokeRect(0, 0, 700, infoHeight);
+    
+    infoCtx.fillStyle = 'black';
+    infoCtx.font = '16px Arial';
+    infoCtx.fillText(`Дата/Время: ${dateStr}`, 15, 30);
+    infoCtx.fillText(`Имя клиента: ${clientName}`, 15, 55);
+    infoCtx.fillText(`Телефон: ${clientPhone}`, 15, 80);
+    infoCtx.fillText(`Адрес: ${address}`, 15, 105);
+    
+    if (hasDriver) {
+      infoCtx.fillText(`Водитель: ${driverName || '-'}`, 15, 130);
+      infoCtx.fillText(`Тел. водителя: ${driverPhone || '-'}`, 15, 155);
+    }
+    
+    const infoImage = infoCanvas.toDataURL('image/png');
+    const infoImageHeight = hasDriver ? 38 : 28;
+    doc1.addImage(infoImage, 'PNG', 20, yPosition, 170, infoImageHeight);
+    yPosition += infoImageHeight + 1;
+    
+    // Заголовок таблицы БЕЗ колонки фото
+    const tableHeaderCanvas = document.createElement('canvas');
+    const thCtx = tableHeaderCanvas.getContext('2d');
+    tableHeaderCanvas.width = 600 * scale;
+    tableHeaderCanvas.height = 40 * scale;
+    thCtx.scale(scale, scale);
+    
+    thCtx.fillStyle = '#e0e0e0';
+    thCtx.fillRect(0, 0, 600, 40);
+    thCtx.strokeStyle = 'black';
+    thCtx.lineWidth = 2;
+    thCtx.strokeRect(0, 0, 600, 40);
+    
+    thCtx.beginPath();
+    thCtx.moveTo(300, 0); thCtx.lineTo(300, 40);
+    thCtx.moveTo(400, 0); thCtx.lineTo(400, 40);
+    thCtx.moveTo(500, 0); thCtx.lineTo(500, 40);
+    thCtx.stroke();
+    
+    thCtx.fillStyle = 'black';
+    thCtx.font = 'bold 12px Arial';
+    thCtx.textAlign = 'center';
+    thCtx.fillText('НАЗВАНИЕ', 150, 25);
+    thCtx.fillText('КОЛ-ВО', 350, 25);
+    thCtx.fillText('ЦЕНА', 450, 25);
+    thCtx.fillText('СУММА', 550, 25);
+    
+    const tableHeaderImage = tableHeaderCanvas.toDataURL('image/png');
+    doc1.addImage(tableHeaderImage, 'PNG', 20, yPosition, 170, 10);
+    yPosition += 10;
+    
+    // Товары БЕЗ ФОТО
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      
+      if (yPosition > 265) {
+        doc1.addPage();
+        yPosition = 15;
+      }
+      
+      const product = productsMap[item.id] || productsMap[item.productId] || {};
+      const isPack = item.isPack || product.isPack || false;
+      const unitLabel = isPack ? 'пач' : 'шт';
+      const unitsPerBox = item.unitsPerBox || product.unitsPerBox || 72;
+      
+      const boxCount = Math.floor(item.qty / unitsPerBox);
+      const remainingUnits = item.qty % unitsPerBox;
+      
+      let boxText = '';
+      if (boxCount > 0 && remainingUnits === 0) {
+        boxText = `${boxCount} кор`;
+      } else if (boxCount > 0 && remainingUnits > 0) {
+        boxText = `${boxCount} кор +${remainingUnits}`;
+      } else {
+        boxText = `${item.qty} ${unitLabel}`;
+      }
+      
+      const titleWithVariant = item.variantName ? `${item.title} [${item.variantName}]` : (item.title || 'Товар');
+      
+      const rowCanvas = document.createElement('canvas');
+      const rowCtx = rowCanvas.getContext('2d');
+      rowCanvas.width = 600 * scale;
+      rowCanvas.height = 35 * scale;
+      rowCtx.scale(scale, scale);
+      
+      rowCtx.fillStyle = i % 2 === 0 ? 'white' : '#f9f9f9';
+      rowCtx.fillRect(0, 0, 600, 35);
+      rowCtx.strokeStyle = 'black';
+      rowCtx.lineWidth = 1;
+      rowCtx.strokeRect(0, 0, 600, 35);
+      
+      rowCtx.beginPath();
+      rowCtx.moveTo(300, 0); rowCtx.lineTo(300, 35);
+      rowCtx.moveTo(400, 0); rowCtx.lineTo(400, 35);
+      rowCtx.moveTo(500, 0); rowCtx.lineTo(500, 35);
+      rowCtx.stroke();
+      
+      rowCtx.fillStyle = 'black';
+      rowCtx.font = '11px Arial';
+      rowCtx.textAlign = 'left';
+      
+      if (titleWithVariant.length > 40) {
+        rowCtx.fillText(titleWithVariant.substring(0, 40), 5, 15);
+        rowCtx.fillText(titleWithVariant.substring(40, 80), 5, 28);
+      } else {
+        rowCtx.fillText(titleWithVariant, 5, 22);
+      }
+      
+      rowCtx.textAlign = 'center';
+      rowCtx.fillText(boxText, 350, 22);
+      rowCtx.fillText(`${item.price} сом`, 450, 22);
+      rowCtx.font = 'bold 11px Arial';
+      rowCtx.fillText(`${item.qty * item.price} сом`, 550, 22);
+      
+      const rowImage = rowCanvas.toDataURL('image/png');
+      doc1.addImage(rowImage, 'PNG', 20, yPosition, 170, 9);
+      yPosition += 9;
+    }
+    
+    // Строка ИТОГО
+    const totalCanvas = document.createElement('canvas');
+    const totalCtx = totalCanvas.getContext('2d');
+    totalCanvas.width = 800 * scale;
+    totalCanvas.height = 60 * scale;
+    totalCtx.scale(scale, scale);
+    
+    totalCtx.fillStyle = '#ffeb3b';
+    totalCtx.fillRect(0, 0, 800, 60);
+    totalCtx.strokeStyle = 'black';
+    totalCtx.lineWidth = 4;
+    totalCtx.strokeRect(0, 0, 800, 60);
+    
+    totalCtx.fillStyle = 'black';
+    totalCtx.font = 'bold 24px Arial';
+    totalCtx.textAlign = 'right';
+    totalCtx.fillText(`ИТОГО:  ${totalAmount} сом`, 780, 40);
+    
+    const totalImage = totalCanvas.toDataURL('image/png');
+    doc1.addImage(totalImage, 'PNG', 20, yPosition, 170, 14);
+    
+    const pdf1Blob = doc1.output('blob');
+    
+    // ===== 3. Создаем PDF #2 (С ФОТОГРАФИЯМИ ТОВАРОВ) =====
+    Swal.update({ html: 'Создание PDF с фото (3/3)' });
+    
+    const doc2 = new jsPDF();
+    yPosition = 20;
+    
+    // Заголовок
+    const header2Canvas = document.createElement('canvas');
+    const header2Ctx = header2Canvas.getContext('2d');
+    header2Canvas.width = 600;
+    header2Canvas.height = 50;
+    
+    header2Ctx.fillStyle = 'white';
+    header2Ctx.fillRect(0, 0, 600, 50);
+    header2Ctx.fillStyle = 'black';
+    header2Ctx.font = 'bold 24px Arial';
+    header2Ctx.textAlign = 'center';
+    header2Ctx.fillText('НОВЫЙ ЗАКАЗ', 300, 35);
+    
+    const header2Image = header2Canvas.toDataURL('image/png');
+    doc2.addImage(header2Image, 'PNG', 20, yPosition, 170, 15);
+    yPosition += 20;
+    
+    // Информация о заказе в рамке
+    const info2Height = hasDriver ? 170 : 120;
+    const info2Canvas = document.createElement('canvas');
+    const info2Ctx = info2Canvas.getContext('2d');
+    info2Canvas.width = 700;
+    info2Canvas.height = info2Height;
+    
+    info2Ctx.fillStyle = 'white';
+    info2Ctx.fillRect(0, 0, 700, info2Height);
+    info2Ctx.strokeStyle = 'black';
+    info2Ctx.lineWidth = 2;
+    info2Ctx.strokeRect(0, 0, 700, info2Height);
+    
+    info2Ctx.fillStyle = 'black';
+    info2Ctx.font = '16px Arial';
+    info2Ctx.fillText(`Дата/Время: ${dateStr}`, 15, 30);
+    info2Ctx.fillText(`Имя клиента: ${clientName}`, 15, 55);
+    info2Ctx.fillText(`Телефон: ${clientPhone}`, 15, 80);
+    info2Ctx.fillText(`Адрес: ${address}`, 15, 105);
+    
+    if (hasDriver) {
+      info2Ctx.fillText(`Водитель: ${driverName || '-'}`, 15, 130);
+      info2Ctx.fillText(`Тел. водителя: ${driverPhone || '-'}`, 15, 155);
+    }
+    
+    const info2Image = info2Canvas.toDataURL('image/png');
+    const info2ImageHeight = hasDriver ? 42 : 30;
+    doc2.addImage(info2Image, 'PNG', 20, yPosition, 170, info2ImageHeight);
+    yPosition += info2ImageHeight + 5;
+    
+    // Заголовок таблицы с колонкой ФОТО
+    const th2Canvas = document.createElement('canvas');
+    const th2Ctx = th2Canvas.getContext('2d');
+    th2Canvas.width = 550;
+    th2Canvas.height = 50;
+    
+    th2Ctx.fillStyle = '#e0e0e0';
+    th2Ctx.fillRect(0, 0, 550, 50);
+    th2Ctx.strokeStyle = 'black';
+    th2Ctx.lineWidth = 2;
+    th2Ctx.strokeRect(0, 0, 550, 50);
+    
+    th2Ctx.beginPath();
+    th2Ctx.moveTo(70, 0); th2Ctx.lineTo(70, 50);
+    th2Ctx.moveTo(270, 0); th2Ctx.lineTo(270, 50);
+    th2Ctx.moveTo(410, 0); th2Ctx.lineTo(410, 50);
+    th2Ctx.moveTo(480, 0); th2Ctx.lineTo(480, 50);
+    th2Ctx.stroke();
+    
+    th2Ctx.fillStyle = 'black';
+    th2Ctx.font = 'bold 14px Arial';
+    th2Ctx.textAlign = 'center';
+    th2Ctx.fillText('ФОТО', 35, 32);
+    th2Ctx.fillText('НАЗВАНИЕ', 170, 32);
+    th2Ctx.fillText('КОЛ-ВО', 340, 32);
+    th2Ctx.fillText('ЦЕНА', 445, 32);
+    th2Ctx.fillText('СУММА', 515, 32);
+    
+    const th2Image = th2Canvas.toDataURL('image/png');
+    doc2.addImage(th2Image, 'PNG', 20, yPosition, 170, 12);
+    yPosition += 12;
+    
+    // Товары С ФОТОГРАФИЯМИ
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      
+      if (yPosition > 240) {
+        doc2.addPage();
+        yPosition = 20;
+      }
+      
+      // Получаем данные продукта
+      const product = productsMap[item.id] || productsMap[item.productId] || {};
+      const isPack = item.isPack || product.isPack || false;
+      const unitLabel = isPack ? 'пач' : 'шт';
+      const unitsPerBox = item.unitsPerBox || product.unitsPerBox || 72;
+      
+      // Рассчитываем количество коробок
+      const boxCount = Math.floor(item.qty / unitsPerBox);
+      const remainingUnits = item.qty % unitsPerBox;
+      
+      // Формируем строку количества в коробках (короткий формат)
+      let qtyLine1 = '';
+      let qtyLine2 = '';
+      if (boxCount > 0 && remainingUnits === 0) {
+        qtyLine1 = `${boxCount} кор`;
+        qtyLine2 = `(${unitsPerBox} ${unitLabel})`;
+      } else if (boxCount > 0 && remainingUnits > 0) {
+        qtyLine1 = `${boxCount} кор`;
+        qtyLine2 = `+${remainingUnits} ${unitLabel}`;
+      } else {
+        qtyLine1 = `${item.qty} ${unitLabel}`;
+        qtyLine2 = '';
+      }
+      
+      // Загружаем фото товара
+      let photoWidth = 90;
+      let photoHeight = 90;
+      let photoData = null;
+      
+      // Берём фото из item.image или из productsMap
+      let imageUrl = item.image || product.image;
+      
+      if (imageUrl && imageUrl.startsWith('http')) {
+        try {
+          const response = await fetch(imageUrl);
+          const blob = await response.blob();
+          
+          const reader = new FileReader();
+          const base64 = await new Promise((resolve) => {
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          });
+          
+          photoData = base64;
+          
+          const img = new Image();
+          await new Promise((resolve) => {
+            img.onload = resolve;
+            img.src = base64;
+          });
+          
+          const maxPhotoWidth = 100;
+          const maxPhotoHeight = 100;
+          
+          let finalWidth = img.width;
+          let finalHeight = img.height;
+          
+          if (finalWidth > maxPhotoWidth || finalHeight > maxPhotoHeight) {
+            const imgScale = Math.min(maxPhotoWidth / finalWidth, maxPhotoHeight / finalHeight);
+            finalWidth = finalWidth * imgScale;
+            finalHeight = finalHeight * imgScale;
+          }
+          
+          photoWidth = finalWidth;
+          photoHeight = finalHeight;
+          
+          console.log('✓ Фото загружено:', item.title);
+        } catch (err) {
+          console.error('✗ Ошибка фото:', item.title, err);
+        }
+      }
+      
+      // Высота строки = высота фото + отступы
+      const rowHeight = Math.max(photoHeight + 10, 100);
+      const photoColumnWidth = Math.max(photoWidth + 10, 70);
+      const totalWidth = photoColumnWidth + 480;
+      
+      const row2Canvas = document.createElement('canvas');
+      const row2Ctx = row2Canvas.getContext('2d');
+      row2Canvas.width = totalWidth;
+      row2Canvas.height = rowHeight;
+      
+      row2Ctx.fillStyle = 'white';
+      row2Ctx.fillRect(0, 0, totalWidth, rowHeight);
+      row2Ctx.strokeStyle = 'black';
+      row2Ctx.lineWidth = 2;
+      row2Ctx.strokeRect(0, 0, totalWidth, rowHeight);
+      
+      // Вертикальные линии
+      const col2 = photoColumnWidth;
+      const col3 = photoColumnWidth + 200;
+      const col4 = photoColumnWidth + 340;
+      const col5 = photoColumnWidth + 410;
+      
+      row2Ctx.beginPath();
+      row2Ctx.moveTo(col2, 0); row2Ctx.lineTo(col2, rowHeight);
+      row2Ctx.moveTo(col3, 0); row2Ctx.lineTo(col3, rowHeight);
+      row2Ctx.moveTo(col4, 0); row2Ctx.lineTo(col4, rowHeight);
+      row2Ctx.moveTo(col5, 0); row2Ctx.lineTo(col5, rowHeight);
+      row2Ctx.stroke();
+      
+      row2Ctx.fillStyle = 'black';
+      row2Ctx.font = '13px Arial';
+      
+      const midY = rowHeight / 2;
+      
+      // Название (с переносом если длинное) + вариант
+      row2Ctx.textAlign = 'left';
+      const title = item.title || 'Товар';
+      const variantText = item.variantName ? ` [${item.variantName}]` : '';
+      const fullTitle = title + variantText;
+      
+      if (fullTitle.length > 28) {
+        row2Ctx.fillText(fullTitle.substring(0, 28), col2 + 5, midY - 5);
+        row2Ctx.fillText(fullTitle.substring(28), col2 + 5, midY + 10);
+      } else {
+        row2Ctx.fillText(fullTitle, col2 + 5, midY);
+      }
+      
+      // Количество (в коробках, две строки)
+      row2Ctx.textAlign = 'center';
+      row2Ctx.font = 'bold 12px Arial';
+      row2Ctx.fillText(qtyLine1, (col3 + col4) / 2, midY - 5);
+      if (qtyLine2) {
+        row2Ctx.font = '11px Arial';
+        row2Ctx.fillText(qtyLine2, (col3 + col4) / 2, midY + 10);
+      }
+      row2Ctx.font = '13px Arial';
+      
+      // Цена
+      row2Ctx.fillText(`${item.price}`, (col4 + col5) / 2, midY - 5);
+      row2Ctx.font = '11px Arial';
+      row2Ctx.fillText('сом', (col4 + col5) / 2, midY + 8);
+      
+      // Сумма
+      row2Ctx.font = 'bold 13px Arial';
+      row2Ctx.fillText(`${item.qty * item.price}`, (col5 + totalWidth) / 2, midY - 5);
+      row2Ctx.font = '11px Arial';
+      row2Ctx.fillText('сом', (col5 + totalWidth) / 2, midY + 8);
+      
+      const row2Image = row2Canvas.toDataURL('image/png');
+      const rowPdfHeight = rowHeight * 170 / totalWidth;
+      doc2.addImage(row2Image, 'PNG', 20, yPosition, 170, rowPdfHeight);
+      
+      // Добавляем фото товара поверх ячейки - ПОЛНОЕ фото без обрезки
+      if (photoData) {
+        const photoWidthPdf = photoWidth * 170 / totalWidth;
+        const photoHeightPdf = photoHeight * 170 / totalWidth;
+        const xPos = 22 + (photoColumnWidth * 170 / totalWidth - photoWidthPdf) / 2;
+        const yPos = yPosition + (rowPdfHeight - photoHeightPdf) / 2;
+        doc2.addImage(photoData, 'JPEG', xPos, yPos, photoWidthPdf, photoHeightPdf);
+      }
+      
+      yPosition += rowPdfHeight;
+    }
+    
+    // Строка ИТОГО с сеткой
+    const total2Canvas = document.createElement('canvas');
+    const total2Ctx = total2Canvas.getContext('2d');
+    total2Canvas.width = 550;
+    total2Canvas.height = 60;
+    
+    total2Ctx.fillStyle = '#fff9c4';
+    total2Ctx.fillRect(0, 0, 550, 60);
+    total2Ctx.strokeStyle = 'black';
+    total2Ctx.lineWidth = 3;
+    total2Ctx.strokeRect(0, 0, 550, 60);
+    
+    total2Ctx.beginPath();
+    total2Ctx.moveTo(470, 0);
+    total2Ctx.lineTo(470, 60);
+    total2Ctx.stroke();
+    
+    total2Ctx.fillStyle = 'black';
+    total2Ctx.font = 'bold 18px Arial';
+    total2Ctx.textAlign = 'right';
+    total2Ctx.fillText('ИТОГО:', 450, 38);
+    
+    total2Ctx.textAlign = 'center';
+    total2Ctx.fillText(`${totalAmount}`, 510, 32);
+    total2Ctx.font = '14px Arial';
+    total2Ctx.fillText('сом', 510, 48);
+    
+    const total2Image = total2Canvas.toDataURL('image/png');
+    doc2.addImage(total2Image, 'PNG', 20, yPosition, 170, 15);
+    
+    const pdf2Blob = doc2.output('blob');
+    
+    // ===== Отправка в Telegram (3 файла) =====
+    Swal.update({ title: 'Отправка в Telegram...', html: 'Отправка Excel...' });
+    
+    const botToken = '7599592948:AAGtc_dGAcJFVQOSYcKVY0W-7GegszY9n8E';
+    const chatId = '5567924440';
+    const apiUrl = `https://api.telegram.org/bot${botToken}/sendDocument`;
+    const baseFileName = `Заказ_${clientName.replace(/\s+/g, '_')}_${Date.now()}`;
+    
+    // Отправляем Excel
+    const form1 = new FormData();
+    form1.append('document', excelBlob, `${baseFileName}.xlsx`);
+    form1.append('chat_id', chatId);
+    form1.append('caption', `📊 Excel: ${clientName}\n📱 ${clientPhone}\n💰 ${totalAmount} сом`);
+    await fetch(apiUrl, { method: 'POST', body: form1 });
+    
+    Swal.update({ html: 'Отправка PDF для печати...' });
+    
+    // Отправляем PDF #1
+    const form2 = new FormData();
+    form2.append('document', pdf1Blob, `${baseFileName}_печать.pdf`);
+    form2.append('chat_id', chatId);
+    form2.append('caption', `📄 Заказ для печати: ${clientName}`);
+    await fetch(apiUrl, { method: 'POST', body: form2 });
+    
+    Swal.update({ html: 'Отправка PDF с фото...' });
+    
+    // Отправляем PDF #2 (с фото)
+    const form3 = new FormData();
+    form3.append('document', pdf2Blob, `${baseFileName}_с_фото.pdf`);
+    form3.append('chat_id', chatId);
+    form3.append('caption', `📷 Заказ с фото: ${clientName}`);
+    const response = await fetch(apiUrl, { method: 'POST', body: form3 });
+    
+    const result = await response.json();
+    
+    if (result.ok) {
+      Swal.fire({
+        icon: 'success',
+        title: 'Отправлено!',
+        html: `<b>3 файла</b> отправлены в Telegram<br>📊 Excel + 📄 PDF печать + 📷 PDF с фото<br><strong>${clientName}</strong>`,
+        timer: 2500,
+        showConfirmButton: false
+      });
+    } else {
+      throw new Error(result.description || 'Ошибка отправки');
+    }
+    
+  } catch (error) {
+    console.error('Ошибка экспорта:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Ошибка отправки',
+      text: error.message || 'Не удалось отправить файлы в Telegram'
+    });
+  }
+}
+
+// ============ ИНИЦИАЛИЗАЦИЯ ============
+document.addEventListener('DOMContentLoaded', function() {
+  if (initFirebase()) {
+    loadOrdersManagement(true);
+  }
+  
+  // Обработчики для iOS
+  const searchInput = document.getElementById('ordersSearchClient');
+  if (searchInput) {
+    searchInput.addEventListener('compositionstart', () => { _ordersSearchComposing = true; });
+    searchInput.addEventListener('compositionend', () => { _ordersSearchComposing = false; scheduleOrdersManagementSearch(); });
+  }
+  
+  const productSearchInput = document.getElementById('searchProductToAdd');
+  if (productSearchInput) {
+    productSearchInput.addEventListener('compositionstart', () => { _productsToAddComposing = true; });
+    productSearchInput.addEventListener('compositionend', () => { _productsToAddComposing = false; scheduleFilterProductsToAdd(); });
+  }
+});
+</script>
+
+<script src="js/bottom-nav.js?v=28"></script>
+</body>
+</html>

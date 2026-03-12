@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <script>if(window.parent!==window)document.write('<style>.bottom-nav,#bottomNavBar{display:none!important}body{padding-bottom:0!important}</style>')</script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Управление складами - Кербен</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      padding-bottom: 70px;
+    }
+    input, textarea, select {
+      font-family: inherit;
+      font-size: 16px;
+    }
+
+    .swal2-container { z-index: 999999 !important; }
+
+    /* Шапка */
+    .page-header {
+      background: linear-gradient(135deg, #1a237e, #283593);
+      color: white;
+      padding: 20px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .page-header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .page-header h1 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .page-header p {
+      font-size: 13px;
+      opacity: 0.8;
+      margin-top: 4px;
+    }
+    .back-btn {
+      background: rgba(255,255,255,0.15);
+      color: white;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Статистика */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      padding: 16px;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .stat-card .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a237e;
+    }
+    .stat-card .stat-label {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    /* Табы */
+    .tabs {
+      display: flex;
+      padding: 0 16px;
+      gap: 8px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tab-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 20px;
+      background: white;
+      color: #666;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .tab-btn.active {
+      background: #1a237e;
+      color: white;
+    }
+
+    /* Контент */
+    .content {
+      padding: 16px;
+    }
+
+    /* Карточки складов */
+    .warehouse-card {
+      background: white;
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      position: relative;
+    }
+    .warehouse-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .warehouse-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a237e;
+    }
+    .warehouse-address {
+      font-size: 13px;
+      color: #888;
+      margin-top: 2px;
+    }
+    .warehouse-stats {
+      display: flex;
+      gap: 16px;
+      margin-top: 10px;
+    }
+    .warehouse-stat {
+      text-align: center;
+    }
+    .warehouse-stat .ws-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #333;
+    }
+    .warehouse-stat .ws-label {
+      font-size: 11px;
+      color: #999;
+    }
+    .warehouse-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .warehouse-actions button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-view { background: #e3f2fd; color: #1565c0; }
+    .btn-edit { background: #fff3e0; color: #e65100; }
+    .btn-delete { background: #fce4ec; color: #c62828; }
+    .btn-transfer { background: #e8f5e9; color: #2e7d32; }
+
+    /* Кнопка добавления склада */
+    .add-warehouse-btn {
+      position: fixed;
+      bottom: 76px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1a237e, #3949ab);
+      color: white;
+      border: none;
+      font-size: 28px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(26,35,126,0.4);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Товары на складе */
+    .product-stock-card {
+      background: white;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .product-stock-card img {
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #f5f5f5;
+    }
+    .product-stock-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .product-stock-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .product-stock-category {
+      font-size: 12px;
+      color: #999;
+      margin-top: 2px;
+    }
+    .product-warehouse-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .product-warehouse-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: #e3f2fd;
+      color: #1565c0;
+      font-weight: 600;
+    }
+    .product-warehouse-badge.zero {
+      background: #fce4ec;
+      color: #c62828;
+    }
+    .product-stock-total {
+      text-align: center;
+      min-width: 60px;
+    }
+    .product-stock-total .total-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a237e;
+    }
+    .product-stock-total .total-label {
+      font-size: 10px;
+      color: #999;
+    }
+
+    /* Поиск */
+    .search-bar {
+      padding: 12px 16px;
+    }
+    .search-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      font-size: 15px;
+      background: white;
+      outline: none;
+    }
+    .search-input:focus {
+      border-color: #1a237e;
+    }
+
+    /* Фильтр по складу */
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      padding: 0 16px 12px;
+      overflow-x: auto;
+    }
+    .filter-chip {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid #ddd;
+      background: white;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .filter-chip.active {
+      border-color: #1a237e;
+      background: #1a237e;
+      color: white;
+    }
+
+    /* Модальное окно */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 9900;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h2 {
+      font-size: 18px;
+      color: #333;
+    }
+    .modal-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: #f5f5f5;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-body {
+      padding: 20px;
+    }
+    .modal-body label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 6px;
+      margin-top: 14px;
+    }
+    .modal-body label:first-child {
+      margin-top: 0;
+    }
+    .modal-body input,
+    .modal-body select,
+    .modal-body textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+    }
+    .modal-body input:focus,
+    .modal-body select:focus { border-color: #1a237e; }
+    .modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid #eee;
+      display: flex;
+      gap: 10px;
+    }
+    .modal-footer button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-cancel { background: #f5f5f5; color: #666; }
+    .btn-save { background: linear-gradient(135deg, #1a237e, #3949ab); color: white; }
+
+    /* Детальный вид склада */
+    .warehouse-detail-header {
+      background: linear-gradient(135deg, #1a237e, #283593);
+      color: white;
+      padding: 20px 16px;
+      margin: -16px -16px 16px -16px;
+      border-radius: 14px 14px 0 0;
+    }
+    .warehouse-detail-header h2 {
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+    .warehouse-detail-header p {
+      font-size: 13px;
+      opacity: 0.8;
+    }
+
+    /* Трансфер */
+    .transfer-arrow {
+      text-align: center;
+      font-size: 28px;
+      padding: 8px 0;
+      color: #1a237e;
+    }
+
+    /* Таблица остатков */
+    .stock-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .stock-table th {
+      background: #f5f5f5;
+      padding: 10px 8px;
+      text-align: left;
+      font-weight: 600;
+      color: #555;
+      position: sticky;
+      top: 0;
+    }
+    .stock-table td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .stock-table tr:hover {
+      background: #f8f9ff;
+    }
+    .stock-input {
+      width: 70px;
+      padding: 6px 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .stock-input:focus {
+      border-color: #1a237e;
+      outline: none;
+    }
+
+    /* Лоадер */
+    .loader {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
+    .loader .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e0e0e0;
+      border-top-color: #1a237e;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Пустое состояние */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+    }
+    .empty-state .emoji {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+
+
+    /* Мобильные адаптации */
+    @media (max-width: 600px) {
+      .page-header { padding: 14px 12px; }
+      .page-header h1 { font-size: 17px; }
+      .page-header p { font-size: 12px; }
+
+      .stats-row { grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 10px; }
+      .stat-card { padding: 10px 6px; border-radius: 10px; }
+      .stat-card .stat-value { font-size: 18px; }
+      .stat-card .stat-label { font-size: 11px; }
+
+      .tabs { padding: 0 10px; gap: 6px; }
+      .tab-btn { padding: 8px 14px; font-size: 13px; }
+
+      .content { padding: 10px; }
+
+      /* Карточки складов */
+      .warehouse-card { padding: 14px 12px; border-radius: 12px; margin-bottom: 10px; }
+      .warehouse-name { font-size: 15px; }
+      .warehouse-address { font-size: 12px; }
+
+      .warehouse-stats { gap: 8px; flex-wrap: wrap; justify-content: space-between; }
+      .warehouse-stat .ws-value { font-size: 16px; }
+      .warehouse-stat .ws-label { font-size: 10px; }
+
+      .warehouse-actions { flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+      .warehouse-actions button { padding: 8px 6px; font-size: 11px; min-width: 0; }
+
+      /* Модальные окна */
+      .modal-overlay { padding: 8px; }
+      .modal-content { border-radius: 14px; max-height: 95vh; }
+      .modal-header { padding: 14px; }
+      .modal-header h2 { font-size: 16px; }
+      .modal-body { padding: 12px; }
+      .modal-footer { padding: 12px; gap: 8px; }
+      .modal-footer button { padding: 10px; font-size: 14px; }
+
+      /* Таблица остатков в модалке */
+      .stock-table { font-size: 12px; }
+      .stock-table th { padding: 8px 4px; font-size: 11px; }
+      .stock-table td { padding: 8px 4px; }
+      .stock-input { width: 58px; padding: 5px 4px; font-size: 13px; }
+
+      /* Товары на складе */
+      .product-stock-card { padding: 10px; gap: 8px; }
+      .product-stock-card img { width: 44px; height: 44px; border-radius: 6px; }
+      .product-stock-title { font-size: 13px; }
+      .product-stock-category { font-size: 11px; }
+      .product-stock-total .total-value { font-size: 16px; }
+      .product-warehouse-badge { font-size: 10px; padding: 2px 6px; }
+
+      /* Поиск */
+      .search-bar { padding: 8px 10px; }
+      .search-input { padding: 10px 12px; font-size: 14px; border-radius: 10px; }
+
+      /* Фильтр */
+      .filter-row { padding: 0 10px 8px; gap: 6px; }
+      .filter-chip { padding: 6px 12px; font-size: 12px; }
+
+      /* Кнопка добавления */
+      .add-warehouse-btn { width: 50px; height: 50px; font-size: 24px; bottom: 72px; right: 14px; }
+    }
+
+    @media (max-width: 380px) {
+      .stats-row { gap: 6px; padding: 8px; }
+      .stat-card .stat-value { font-size: 16px; }
+
+      .warehouse-stats { gap: 6px; }
+      .warehouse-stat .ws-value { font-size: 14px; }
+
+      .warehouse-actions { gap: 4px; }
+      .warehouse-actions button { font-size: 10px; padding: 7px 4px; }
+
+      .stock-input { width: 50px; font-size: 12px; }
+      .stock-table td { padding: 6px 3px; }
+    }
+
+    /* Цветовая кодировка складов */
+    .wh-color-1 { border-left: 4px solid #1a237e; }
+    .wh-color-2 { border-left: 4px solid #e65100; }
+    .wh-color-3 { border-left: 4px solid #2e7d32; }
+    .wh-color-4 { border-left: 4px solid #c62828; }
+
+    /* Индикатор остатка */
+    .stock-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+    .stock-indicator.green { background: #4caf50; }
+    .stock-indicator.yellow { background: #ff9800; }
+    .stock-indicator.red { background: #f44336; }
+
+    /* Кнопка «Распределить остатки» */
+    .distribute-btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border: 2px dashed #1a237e;
+      border-radius: 12px;
+      background: #e8eaf6;
+      color: #1a237e;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: all 0.2s;
+    }
+    .distribute-btn:hover {
+      background: #c5cae9;
+    }
+
+    /* Главный склад */
+    .btn-primary-wh { background: #fff8e1; color: #f57f17; }
+    .btn-primary-wh.active { background: #f57f17; color: white; }
+    .primary-badge {
+      display: inline-block;
+      background: #f57f17;
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Шапка -->
+  <div class="page-header">
+    <div class="page-header-top">
+      <div>
+        <h1>🏭 Управление складами</h1>
+        <p>Остатки и перемещения товаров</p>
+      </div>
+      <button class="back-btn" onclick="window.location.href='profile.html'">←</button>
+    </div>
+  </div>
+
+  <!-- Статистика -->
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card">
+      <div class="stat-value" id="statWarehouses">0</div>
+      <div class="stat-label">Складов</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statProducts">0</div>
+      <div class="stat-label">Наименований</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statTotalStock">0</div>
+      <div class="stat-label">Всего единиц</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statLowStock">0</div>
+      <div class="stat-label">Мало остатков</div>
+    </div>
+  </div>
+
+  <!-- Табы -->
+  <div class="tabs" id="tabsContainer">
+    <button class="tab-btn active" data-tab="warehouses" onclick="switchTab('warehouses')">📦 Склады</button>
+    <button class="tab-btn" data-tab="products" onclick="switchTab('products')">🏷️ Товары</button>
+    <button class="tab-btn" data-tab="movements" onclick="switchTab('movements')">🔄 Движения</button>
+  </div>
+
+  <!-- Таб 1: Список складов -->
+  <div id="tab-warehouses" class="content tab-content">
+    <div id="warehousesList" class="loader">
+      <div class="spinner"></div>
+      Загрузка складов...
+    </div>
+  </div>
+
+  <!-- Таб 2: Товары по складам -->
+  <div id="tab-products" class="content tab-content" style="display:none;">
+    <div class="search-bar" style="padding:0 0 12px;">
+      <input type="text" class="search-input" id="productSearch" placeholder="🔍 Поиск товара..." oninput="filterProducts()">
+    </div>
+    <div class="filter-row" id="warehouseFilter"></div>
+    <div id="productsStockList" class="loader">
+      <div class="spinner"></div>
+      Загрузка товаров...
+    </div>
+  </div>
+
+  <!-- Таб 3: История движений -->
+  <div id="tab-movements" class="content tab-content" style="display:none;">
+    <div id="movementsList" class="empty-state">
+      <div class="emoji">📋</div>
+      <p>История перемещений</p>
+    </div>
+  </div>
+
+  <!-- Кнопка добавления склада -->
+  <button class="add-warehouse-btn" onclick="showAddWarehouseModal()" title="Добавить склад">+</button>
+
+  <!-- Модальное окно: Добавить/Редактировать склад -->
+  <div class="modal-overlay" id="warehouseModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="warehouseModalTitle">Новый склад</h2>
+        <button class="modal-close" onclick="closeWarehouseModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="warehouseEditId">
+        <label>Название склада *</label>
+        <input type="text" id="warehouseName" placeholder="Например: Склад Кара-Суу">
+        <label>Адрес</label>
+        <input type="text" id="warehouseAddress" placeholder="Адрес или расположение">
+        <label>Телефон ответственного</label>
+        <input type="text" id="warehousePhone" placeholder="+996 ..." inputmode="tel">
+        <label>Примечание</label>
+        <textarea id="warehouseNote" placeholder="Дополнительная информация" rows="2"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeWarehouseModal()">Отмена</button>
+        <button class="btn-save" onclick="saveWarehouse()">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно: Привязка остатков к складу -->
+  <div class="modal-overlay" id="stockModal">
+    <div class="modal-content" style="max-height: 95vh;">
+      <div class="modal-header">
+        <h2 id="stockModalTitle">Остатки склада</h2>
+        <button class="modal-close" onclick="closeStockModal()">×</button>
+      </div>
+      <div class="modal-body" style="padding: 10px;">
+        <div class="search-bar" style="padding:0 0 8px;">
+          <input type="text" class="search-input" id="stockProductSearch" placeholder="🔍 Поиск товара..." oninput="filterStockProducts()">
+        </div>
+        <div style="padding:0 0 10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#555; cursor:pointer; user-select:none;">
+            <input type="checkbox" id="stockHideZero" onchange="filterStockProducts()" style="width:18px; height:18px; accent-color:#1a237e; cursor:pointer;"> Только с остатком
+          </label>
+          <span style="color:#ccc;">|</span>
+          <div style="display:flex; align-items:center; gap:4px;">
+            <select id="stockQtyDir" onchange="filterStockProducts()" style="padding:4px 6px; border:1px solid #ddd; border-radius:6px; font-size:13px; color:#555; background:#fff; cursor:pointer;">
+              <option value="">Кол-во</option>
+              <option value="gte">≥ больше</option>
+              <option value="lte">≤ меньше</option>
+            </select>
+            <input type="number" id="stockQtyVal" min="0" placeholder="0" oninput="filterStockProducts()" style="width:60px; padding:4px 6px; border:1px solid #ddd; border-radius:6px; font-size:13px; text-align:center;">
+          </div>
+        </div>
+        <div id="stockProductsList" style="max-height: 60vh; overflow-y: auto;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeStockModal()">Отмена</button>
+        <button class="btn-save" onclick="saveStockChanges()">💾 Сохранить остатки</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно: Перемещение между складами -->
+  <div class="modal-overlay" id="transferModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>🔄 Перемещение товара</h2>
+        <button class="modal-close" onclick="closeTransferModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <label>Товар</label>
+        <select id="transferProduct" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;" onchange="updateTransferInfo()">
+          <option value="">Выберите товар</option>
+        </select>
+        <div id="transferProductInfo" style="margin-top:8px; font-size:13px; color:#888;"></div>
+        
+        <label>Со склада</label>
+        <select id="transferFrom" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;" onchange="updateTransferInfo()">
+          <option value="">Выберите склад</option>
+        </select>
+        
+        <div class="transfer-arrow">⬇️</div>
+        
+        <label>На склад</label>
+        <select id="transferTo" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;">
+          <option value="">Выберите склад</option>
+        </select>
+        
+        <label>Количество</label>
+        <input type="number" id="transferQty" placeholder="0" min="1" inputmode="numeric">
+        <div id="transferAvailable" style="margin-top:4px; font-size:12px; color:#888;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeTransferModal()">Отмена</button>
+        <button class="btn-save" onclick="executeTransfer()">🔄 Переместить</button>
+      </div>
+    </div>
+  </div>
+
+<script src="js/bottom-nav.js?v=28"></script>
+
+<script>
+// ==================== УПРАВЛЕНИЕ СКЛАДАМИ ====================
+
+// Firebase конфигурация
+const firebaseConfig = {
+  apiKey: "AIzaSyBRQ6hH7kXq7ApJmqbvTG1EQsXwxWEnaGg",
+  authDomain: "svoysayet.firebaseapp.com",
+  projectId: "svoysayet",
+  storageBucket: "svoysayet.firebasestorage.app",
+  messagingSenderId: "450143000217",
+  appId: "1:450143000217:web:7495cefaea0b94966e8a08",
+  measurementId: "G-Y8VG9E29FY"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Утилита экранирования HTML
+function esc(str) {
+  if (!str) return '';
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// Глобальные переменные
+let warehouses = [];
+let products = [];
+let movements = [];
+let currentTab = 'warehouses';
+let selectedWarehouseFilter = 'all';
+let stockChanges = {}; // {productId: qty} для текущего склада
+let primaryWarehouseId = ''; // ID главного склада
+
+// ==================== ИНИЦИАЛИЗАЦИЯ ====================
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadData();
+});
+
+async function loadData() {
+  try {
+    await Promise.all([loadWarehouses(), loadProducts(), loadMovements(), loadPrimaryWarehouse()]);
+    updateStats();
+    renderWarehouses();
+  } catch (e) {
+    console.error('Ошибка загрузки:', e);
+    Swal.fire('Ошибка', 'Не удалось загрузить данные: ' + e.message, 'error');
+  }
+}
+
+async function loadPrimaryWarehouse() {
+  try {
+    const doc = await db.collection('settings').doc('warehouse').get();
+    if (doc.exists) {
+      primaryWarehouseId = doc.data().primaryWarehouseId || '';
+    }
+  } catch(e) { primaryWarehouseId = ''; }
+}
+
+async function loadWarehouses() {
+  const snap = await db.collection('warehouses').orderBy('order', 'asc').get();
+  warehouses = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+async function loadProducts() {
+  const snap = await db.collection('products').get();
+  products = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+async function loadMovements() {
+  try {
+    const snap = await db.collection('warehouseMovements')
+      .orderBy('createdAt', 'desc')
+      .limit(100)
+      .get();
+    movements = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (e) {
+    movements = [];
+    console.log('Коллекция warehouseMovements пока пуста');
+  }
+}
+
+// ==================== СТАТИСТИКА ====================
+function updateStats() {
+  document.getElementById('statWarehouses').textContent = warehouses.length;
+  
+  const productsWithStock = products.filter(p => {
+    const ws = p.warehouseStock || {};
+    return Object.values(ws).some(v => v > 0);
+  });
+  document.getElementById('statProducts').textContent = productsWithStock.length || products.filter(p => typeof p.stock === 'number' && p.stock > 0).length;
+  
+  let totalStock = 0;
+  let lowStockCount = 0;
+  products.forEach(p => {
+    const ws = p.warehouseStock || {};
+    const total = Object.values(ws).reduce((sum, v) => sum + (v || 0), 0);
+    if (total > 0) {
+      totalStock += total;
+      if (total <= 5) lowStockCount++;
+    } else if (typeof p.stock === 'number' && p.stock > 0) {
+      totalStock += p.stock;
+      if (p.stock <= 5) lowStockCount++;
+    }
+  });
+  
+  document.getElementById('statTotalStock').textContent = totalStock.toLocaleString();
+  document.getElementById('statLowStock').textContent = lowStockCount;
+}
+
+// ==================== ТАБЫ ====================
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+  document.querySelectorAll('.tab-content').forEach(el => {
+    el.style.display = 'none';
+  });
+  document.getElementById('tab-' + tab).style.display = 'block';
+  
+  if (tab === 'products') {
+    renderWarehouseFilter();
+    renderProductsStock();
+  } else if (tab === 'movements') {
+    renderMovements();
+  }
+}
+
+// ==================== РЕНДЕР СКЛАДОВ ====================
+function renderWarehouses() {
+  const container = document.getElementById('warehousesList');
+  
+  if (warehouses.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">🏭</div>
+        <p>Нет складов</p>
+        <p style="font-size:13px; margin-top:8px;">Нажмите + чтобы добавить склад</p>
+      </div>
+    `;
+    return;
+  }
+  
+  let html = '';
+  warehouses.forEach((wh, index) => {
+    // Считаем количество товаров и общий остаток на складе
+    let productCount = 0;
+    let totalStock = 0;
+    let totalSellValue = 0;
+    let totalCostValue = 0;
+    
+    products.forEach(p => {
+      const ws = p.warehouseStock || {};
+      const qty = ws[wh.id] || 0;
+      if (qty > 0) {
+        productCount++;
+        totalStock += qty;
+        totalSellValue += qty * (p.price || 0);
+        totalCostValue += qty * (p.costPrice || 0);
+      }
+    });
+    
+    const colorClass = `wh-color-${(index % 4) + 1}`;
+    
+    html += `
+      <div class="warehouse-card ${colorClass}">
+        <div class="warehouse-card-header">
+          <div>
+            <div class="warehouse-name">${esc(wh.name) || 'Без названия'}${wh.id === primaryWarehouseId ? '<span class="primary-badge">⭐ Главный</span>' : ''}</div>
+            <div class="warehouse-address">${esc(wh.address)}</div>
+          </div>
+        </div>
+        <div class="warehouse-stats">
+          <div class="warehouse-stat">
+            <div class="ws-value">${productCount}</div>
+            <div class="ws-label">Товаров</div>
+          </div>
+          <div class="warehouse-stat">
+            <div class="ws-value">${totalStock.toLocaleString()}</div>
+            <div class="ws-label">Единиц</div>
+          </div>
+          <div class="warehouse-stat">
+            <div class="ws-value">${totalCostValue.toLocaleString()}</div>
+            <div class="ws-label">Себестоимость</div>
+          </div>
+          <div class="warehouse-stat">
+            <div class="ws-value">${totalSellValue.toLocaleString()}</div>
+            <div class="ws-label">Продажная</div>
+          </div>
+        </div>
+        <div class="warehouse-actions">
+          <button class="btn-primary-wh ${wh.id === primaryWarehouseId ? 'active' : ''}" onclick="setPrimaryWarehouse('${wh.id}')">${wh.id === primaryWarehouseId ? '⭐ Главный' : '☆ Сделать главным'}</button>
+          <button class="btn-view" onclick="openStockModal('${wh.id}')">📋 Остатки</button>
+          <button class="btn-transfer" onclick="openTransferModal('${wh.id}')">🔄 Перемещение</button>
+          <button class="btn-edit" onclick="editWarehouse('${wh.id}')">✏️</button>
+          <button class="btn-delete" onclick="deleteWarehouse('${wh.id}')">🗑️</button>
+        </div>
+      </div>
+    `;
+  });
+  
+  container.innerHTML = html;
+}
+
+// ==================== CRUD СКЛАДОВ ====================
+function showAddWarehouseModal() {
+  document.getElementById('warehouseModalTitle').textContent = 'Новый склад';
+  document.getElementById('warehouseEditId').value = '';
+  document.getElementById('warehouseName').value = '';
+  document.getElementById('warehouseAddress').value = '';
+  document.getElementById('warehousePhone').value = '';
+  document.getElementById('warehouseNote').value = '';
+  document.getElementById('warehouseModal').classList.add('active');
+}
+
+function editWarehouse(id) {
+  const wh = warehouses.find(w => w.id === id);
+  if (!wh) return;
+  
+  document.getElementById('warehouseModalTitle').textContent = 'Редактировать склад';
+  document.getElementById('warehouseEditId').value = id;
+  document.getElementById('warehouseName').value = wh.name || '';
+  document.getElementById('warehouseAddress').value = wh.address || '';
+  document.getElementById('warehousePhone').value = wh.phone || '';
+  document.getElementById('warehouseNote').value = wh.note || '';
+  document.getElementById('warehouseModal').classList.add('active');
+}
+
+function closeWarehouseModal() {
+  document.getElementById('warehouseModal').classList.remove('active');
+}
+
+async function saveWarehouse() {
+  const name = document.getElementById('warehouseName').value.trim();
+  if (!name) {
+    Swal.fire('Ошибка', 'Введите название склада', 'warning');
+    return;
+  }
+  
+  const data = {
+    name,
+    address: document.getElementById('warehouseAddress').value.trim(),
+    phone: document.getElementById('warehousePhone').value.trim(),
+    note: document.getElementById('warehouseNote').value.trim(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  
+  const editId = document.getElementById('warehouseEditId').value;
+  
+  try {
+    if (editId) {
+      await db.collection('warehouses').doc(editId).update(data);
+      Swal.fire({ icon: 'success', title: 'Склад обновлён', timer: 1500, showConfirmButton: false });
+    } else {
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      data.order = warehouses.length + 1;
+      await db.collection('warehouses').add(data);
+      Swal.fire({ icon: 'success', title: 'Склад добавлен!', timer: 1500, showConfirmButton: false });
+    }
+    
+    closeWarehouseModal();
+    await loadWarehouses();
+    updateStats();
+    renderWarehouses();
+  } catch (e) {
+    console.error('Ошибка сохранения склада:', e);
+    Swal.fire('Ошибка', 'Не удалось сохранить: ' + e.message, 'error');
+  }
+}
+
+async function deleteWarehouse(id) {
+  const wh = warehouses.find(w => w.id === id);
+  if (!wh) return;
+  
+  // Проверяем, есть ли товары на этом складе
+  const hasStock = products.some(p => {
+    const ws = p.warehouseStock || {};
+    return (ws[id] || 0) > 0;
+  });
+  
+  if (hasStock) {
+    Swal.fire('Нельзя удалить', 'На этом складе есть товары. Сначала переместите их на другой склад.', 'warning');
+    return;
+  }
+  
+  const result = await Swal.fire({
+    title: 'Удалить склад?',
+    text: `Вы уверены, что хотите удалить "${esc(wh.name)}"?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    confirmButtonText: 'Удалить',
+    cancelButtonText: 'Отмена'
+  });
+  
+  if (!result.isConfirmed) return;
+  
+  try {
+    await db.collection('warehouses').doc(id).delete();
+    Swal.fire({ icon: 'success', title: 'Склад удалён', timer: 1500, showConfirmButton: false });
+    await loadWarehouses();
+    updateStats();
+    renderWarehouses();
+  } catch (e) {
+    Swal.fire('Ошибка', 'Не удалось удалить: ' + e.message, 'error');
+  }
+}
+
+// ==================== ГЛАВНЫЙ СКЛАД ====================
+async function setPrimaryWarehouse(id) {
+  const wh = warehouses.find(w => w.id === id);
+  if (!wh) return;
+
+  if (primaryWarehouseId === id) {
+    // Уже главный — снимаем
+    const r = await Swal.fire({
+      title: 'Снять главный склад?',
+      text: `"${esc(wh.name)}" перестанет быть главным. Товары при заказе будут списываться автоматически с наибольшего остатка.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Снять',
+      cancelButtonText: 'Отмена'
+    });
+    if (!r.isConfirmed) return;
+    try {
+      await db.collection('settings').doc('warehouse').set({ primaryWarehouseId: '' }, { merge: true });
+      primaryWarehouseId = '';
+      Swal.fire({ icon: 'success', title: 'Главный склад снят', timer: 1500, showConfirmButton: false });
+      renderWarehouses();
+    } catch(e) {
+      Swal.fire('Ошибка', e.message, 'error');
+    }
+    return;
+  }
+
+  const r = await Swal.fire({
+    title: 'Сделать главным?',
+    html: `Склад <b>"${esc(wh.name)}"</b> станет главным.<br><br>Все заказы будут списываться с этого склада.`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: '⭐ Сделать главным',
+    cancelButtonText: 'Отмена',
+    confirmButtonColor: '#f57f17'
+  });
+  if (!r.isConfirmed) return;
+
+  try {
+    await db.collection('settings').doc('warehouse').set({ primaryWarehouseId: id }, { merge: true });
+    primaryWarehouseId = id;
+    Swal.fire({ icon: 'success', title: `"${esc(wh.name)}" — главный склад!`, timer: 1500, showConfirmButton: false });
+    renderWarehouses();
+  } catch(e) {
+    Swal.fire('Ошибка', e.message, 'error');
+  }
+}
+
+// ==================== ОСТАТКИ НА СКЛАДЕ ====================
+let currentStockWarehouseId = null;
+
+function openStockModal(warehouseId) {
+  currentStockWarehouseId = warehouseId;
+  stockChanges = {};
+  const wh = warehouses.find(w => w.id === warehouseId);
+  document.getElementById('stockModalTitle').textContent = `📦 ${wh ? wh.name : 'Склад'}`;
+  document.getElementById('stockProductSearch').value = '';
+  const hideZeroCb = document.getElementById('stockHideZero');
+  if (hideZeroCb) hideZeroCb.checked = false;
+  const qtyDirEl = document.getElementById('stockQtyDir');
+  if (qtyDirEl) qtyDirEl.value = '';
+  const qtyValEl = document.getElementById('stockQtyVal');
+  if (qtyValEl) qtyValEl.value = '';
+  renderStockProducts();
+  document.getElementById('stockModal').classList.add('active');
+}
+
+function closeStockModal() {
+  document.getElementById('stockModal').classList.remove('active');
+  currentStockWarehouseId = null;
+  stockChanges = {};
+}
+
+function renderStockProducts(filter = '') {
+  const container = document.getElementById('stockProductsList');
+  const warehouseId = currentStockWarehouseId;
+  const hideZero = document.getElementById('stockHideZero') && document.getElementById('stockHideZero').checked;
+  
+  let filtered = products.filter(p => !p.blocked);
+  
+  if (filter) {
+    const q = filter.toLowerCase();
+    filtered = filtered.filter(p => (p.title || '').toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q));
+  }
+
+  if (hideZero) {
+    filtered = filtered.filter(p => {
+      const qty = stockChanges.hasOwnProperty(p.id) ? stockChanges[p.id] : ((p.warehouseStock || {})[warehouseId] || 0);
+      return qty > 0;
+    });
+  }
+
+  const qtyDir = document.getElementById('stockQtyDir') ? document.getElementById('stockQtyDir').value : '';
+  const qtyVal = parseInt(document.getElementById('stockQtyVal') ? document.getElementById('stockQtyVal').value : '', 10);
+  if (qtyDir && !isNaN(qtyVal)) {
+    filtered = filtered.filter(p => {
+      const qty = stockChanges.hasOwnProperty(p.id) ? stockChanges[p.id] : ((p.warehouseStock || {})[warehouseId] || 0);
+      return qtyDir === 'gte' ? qty >= qtyVal : qty <= qtyVal;
+    });
+  }
+  
+  // Сортировка: сначала товары с остатком на этом складе
+  filtered.sort((a, b) => {
+    const aStock = (a.warehouseStock || {})[warehouseId] || 0;
+    const bStock = (b.warehouseStock || {})[warehouseId] || 0;
+    if (bStock > 0 && aStock === 0) return 1;
+    if (aStock > 0 && bStock === 0) return -1;
+    return (a.title || '').localeCompare(b.title || '');
+  });
+  
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-state"><p>Товары не найдены</p></div>';
+    return;
+  }
+  
+  let html = `<table class="stock-table">
+    <thead>
+      <tr>
+        <th style="width:50%">Товар</th>
+        <th style="width:25%; text-align:center;">Общий</th>
+        <th style="width:25%; text-align:center;">На складе</th>
+      </tr>
+    </thead>
+    <tbody>`;
+  
+  filtered.forEach(p => {
+    const ws = p.warehouseStock || {};
+    const originalStock = ws[warehouseId] || 0;
+    const hasChange = stockChanges.hasOwnProperty(p.id);
+    const displayStock = hasChange ? stockChanges[p.id] : originalStock;
+    const totalStock = typeof p.stock === 'number' ? p.stock : Object.values(ws).reduce((s, v) => s + (v || 0), 0);
+    const adjustedTotal = hasChange ? totalStock - originalStock + displayStock : totalStock;
+    
+    html += `
+      <tr>
+        <td>
+          <div style="font-weight:600; font-size:13px;">${esc(p.title) || 'Без названия'}</div>
+          <div style="font-size:11px; color:#999;">${esc(p.category)}</div>
+        </td>
+        <td style="text-align:center; font-weight:600; color:#666;">${adjustedTotal}</td>
+        <td style="text-align:center;">
+          <input type="number" class="stock-input" 
+            value="${displayStock}" 
+            min="0" 
+            inputmode="numeric"
+            data-product-id="${p.id}"
+            data-original="${originalStock}"
+            onfocus="if(this.value==='0')this.value=''"
+            onblur="if(this.value===''){this.value='0';onStockChange(this,'${p.id}')}"
+            onchange="onStockChange(this, '${p.id}')"
+            style="${hasChange ? 'background:#e8f5e9; font-weight:700;' : ''}">
+        </td>
+      </tr>
+    `;
+  });
+  
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function filterStockProducts() {
+  const q = document.getElementById('stockProductSearch').value;
+  renderStockProducts(q);
+}
+
+function onStockChange(input, productId) {
+  const newVal = parseInt(input.value) || 0;
+  const original = parseInt(input.dataset.original) || 0;
+  
+  if (newVal !== original) {
+    stockChanges[productId] = newVal;
+    input.style.background = '#e8f5e9';
+    input.style.fontWeight = '700';
+  } else {
+    delete stockChanges[productId];
+    input.style.background = '';
+    input.style.fontWeight = '600';
+  }
+}
+
+async function saveStockChanges() {
+  const changedIds = Object.keys(stockChanges);
+  if (changedIds.length === 0) {
+    Swal.fire('Нет изменений', 'Вы не изменили остатки', 'info');
+    return;
+  }
+  
+  const warehouseId = currentStockWarehouseId;
+  const wh = warehouses.find(w => w.id === warehouseId);
+  
+  const result = await Swal.fire({
+    title: 'Сохранить остатки?',
+    text: `Будет обновлено ${changedIds.length} товар(ов) на складе "${esc(wh ? wh.name : '')}"`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Сохранить',
+    cancelButtonText: 'Отмена'
+  });
+  
+  if (!result.isConfirmed) return;
+  
+  try {
+    Swal.fire({ title: 'Сохранение...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    
+    const batch = db.batch();
+    const movementBatch = [];
+    
+    for (const productId of changedIds) {
+      const newQty = stockChanges[productId];
+      const product = products.find(p => p.id === productId);
+      if (!product) continue;
+      
+      const ws = product.warehouseStock || {};
+      const oldQty = ws[warehouseId] || 0;
+      const diff = newQty - oldQty;
+      
+      // Обновляем warehouseStock
+      ws[warehouseId] = newQty;
+      
+      // Пересчитываем общий stock как сумму всех складов
+      const totalStock = Object.values(ws).reduce((sum, v) => sum + (v || 0), 0);
+      
+      const productRef = db.collection('products').doc(productId);
+      batch.update(productRef, {
+        warehouseStock: ws,
+        stock: totalStock
+      });
+      
+      // Записываем движение
+      if (diff !== 0) {
+        movementBatch.push({
+          productId,
+          productTitle: product.title || '',
+          warehouseId,
+          warehouseName: wh ? wh.name : '',
+          type: diff > 0 ? 'receipt' : 'adjustment',
+          qty: Math.abs(diff),
+          direction: diff > 0 ? 'in' : 'out',
+          oldQty,
+          newQty,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          note: diff > 0 ? 'Приход на склад' : 'Корректировка остатка'
+        });
+      }
+    }
+    
+    // Добавляем движения в тот же batch
+    for (const mov of movementBatch) {
+      const movRef = db.collection('warehouseMovements').doc();
+      batch.set(movRef, mov);
+    }
+    
+    await batch.commit();
+    
+    Swal.fire({ icon: 'success', title: 'Остатки сохранены!', timer: 1500, showConfirmButton: false });
+    
+    closeStockModal();
+    await loadProducts();
+    updateStats();
+    renderWarehouses();
+  } catch (e) {
+    console.error('Ошибка сохранения остатков:', e);
+    Swal.fire('Ошибка', 'Не удалось сохранить: ' + e.message, 'error');
+  }
+}
+
+// ==================== ПЕРЕМЕЩЕНИЕ МЕЖДУ СКЛАДАМИ ====================
+function openTransferModal(fromWarehouseId) {
+  // Заполняем список товаров
+  const productSelect = document.getElementById('transferProduct');
+  productSelect.innerHTML = '<option value="">Выберите товар</option>';
+  products.filter(p => !p.blocked).sort((a, b) => (a.title || '').localeCompare(b.title || '')).forEach(p => {
+    productSelect.innerHTML += `<option value="${esc(p.id)}">${esc(p.title) || 'Без названия'}</option>`;
+  });
+  
+  // Заполняем склады
+  const fromSelect = document.getElementById('transferFrom');
+  const toSelect = document.getElementById('transferTo');
+  fromSelect.innerHTML = '<option value="">Выберите склад</option>';
+  toSelect.innerHTML = '<option value="">Выберите склад</option>';
+  
+  warehouses.forEach(wh => {
+    fromSelect.innerHTML += `<option value="${esc(wh.id)}" ${wh.id === fromWarehouseId ? 'selected' : ''}>${esc(wh.name)}</option>`;
+    toSelect.innerHTML += `<option value="${esc(wh.id)}">${esc(wh.name)}</option>`;
+  });
+  
+  document.getElementById('transferQty').value = '';
+  document.getElementById('transferProductInfo').innerHTML = '';
+  document.getElementById('transferAvailable').innerHTML = '';
+  document.getElementById('transferModal').classList.add('active');
+}
+
+function closeTransferModal() {
+  document.getElementById('transferModal').classList.remove('active');
+}
+
+function updateTransferInfo() {
+  const productId = document.getElementById('transferProduct').value;
+  const fromId = document.getElementById('transferFrom').value;
+  
+  if (!productId || !fromId) {
+    document.getElementById('transferProductInfo').innerHTML = '';
+    document.getElementById('transferAvailable').innerHTML = '';
+    return;
+  }
+  
+  const product = products.find(p => p.id === productId);
+  if (!product) return;
+  
+  const ws = product.warehouseStock || {};
+  const available = ws[fromId] || 0;
+  
+  // Показываем остатки по всем складам
+  let info = '<div style="margin-top:8px;">';
+  warehouses.forEach(wh => {
+    const qty = ws[wh.id] || 0;
+    const isCurrent = wh.id === fromId;
+    info += `<span class="product-warehouse-badge ${qty === 0 ? 'zero' : ''}" style="${isCurrent ? 'border:2px solid #1a237e;' : ''}">${esc(wh.name)}: ${qty}</span> `;
+  });
+  info += '</div>';
+  
+  document.getElementById('transferProductInfo').innerHTML = info;
+  document.getElementById('transferAvailable').innerHTML = `Доступно для перемещения: <b>${available}</b> шт`;
+  document.getElementById('transferQty').max = available;
+}
+
+async function executeTransfer() {
+  const productId = document.getElementById('transferProduct').value;
+  const fromId = document.getElementById('transferFrom').value;
+  const toId = document.getElementById('transferTo').value;
+  const qty = parseInt(document.getElementById('transferQty').value) || 0;
+  
+  if (!productId) { Swal.fire('Ошибка', 'Выберите товар', 'warning'); return; }
+  if (!fromId) { Swal.fire('Ошибка', 'Выберите склад-источник', 'warning'); return; }
+  if (!toId) { Swal.fire('Ошибка', 'Выберите склад-назначение', 'warning'); return; }
+  if (fromId === toId) { Swal.fire('Ошибка', 'Склады должны быть разными', 'warning'); return; }
+  if (qty <= 0) { Swal.fire('Ошибка', 'Введите количество', 'warning'); return; }
+  
+  const product = products.find(p => p.id === productId);
+  if (!product) { Swal.fire('Ошибка', 'Товар не найден', 'error'); return; }
+  
+  const ws = product.warehouseStock || {};
+  const available = ws[fromId] || 0;
+  
+  if (qty > available) {
+    Swal.fire('Ошибка', `На складе только ${available} шт`, 'warning');
+    return;
+  }
+  
+  const fromWh = warehouses.find(w => w.id === fromId);
+  const toWh = warehouses.find(w => w.id === toId);
+  
+  const result = await Swal.fire({
+    title: 'Подтвердите перемещение',
+    html: `
+      <b>${esc(product.title)}</b><br><br>
+      ${esc(fromWh ? fromWh.name : 'Склад')} → ${esc(toWh ? toWh.name : 'Склад')}<br>
+      Количество: <b>${qty}</b> шт
+    `,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Переместить',
+    cancelButtonText: 'Отмена'
+  });
+  
+  if (!result.isConfirmed) return;
+  
+  try {
+    Swal.fire({ title: 'Перемещение...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    
+    // Обновляем остатки
+    ws[fromId] = (ws[fromId] || 0) - qty;
+    ws[toId] = (ws[toId] || 0) + qty;
+    
+    // Убираем нулевые значения
+    if (ws[fromId] <= 0) ws[fromId] = 0;
+    
+    const transferBatch = db.batch();
+    
+    // Общий stock не меняется при перемещении
+    const productRef = db.collection('products').doc(productId);
+    transferBatch.update(productRef, { warehouseStock: ws });
+    
+    // Записываем движение в тот же batch
+    const movRef = db.collection('warehouseMovements').doc();
+    transferBatch.set(movRef, {
+      productId,
+      productTitle: product.title || '',
+      type: 'transfer',
+      fromWarehouseId: fromId,
+      fromWarehouseName: fromWh ? fromWh.name : '',
+      toWarehouseId: toId,
+      toWarehouseName: toWh ? toWh.name : '',
+      qty,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      note: `Перемещение: ${fromWh ? fromWh.name : ''} → ${toWh ? toWh.name : ''}`
+    });
+    
+    await transferBatch.commit();
+    
+    Swal.fire({ icon: 'success', title: 'Товар перемещён!', timer: 1500, showConfirmButton: false });
+    
+    closeTransferModal();
+    await loadProducts();
+    updateStats();
+    renderWarehouses();
+  } catch (e) {
+    console.error('Ошибка перемещения:', e);
+    Swal.fire('Ошибка', 'Не удалось переместить: ' + e.message, 'error');
+  }
+}
+
+// ==================== ТОВАРЫ ПО СКЛАДАМ (ТАБ 2) ====================
+function renderWarehouseFilter() {
+  const container = document.getElementById('warehouseFilter');
+  let html = `<button class="filter-chip ${selectedWarehouseFilter === 'all' ? 'active' : ''}" onclick="setWarehouseFilter('all')">Все склады</button>`;
+  warehouses.forEach(wh => {
+    html += `<button class="filter-chip ${selectedWarehouseFilter === wh.id ? 'active' : ''}" onclick="setWarehouseFilter('${esc(wh.id)}')">${esc(wh.name)}</button>`;
+  });
+  container.innerHTML = html;
+}
+
+function setWarehouseFilter(id) {
+  selectedWarehouseFilter = id;
+  renderWarehouseFilter();
+  renderProductsStock();
+}
+
+function filterProducts() {
+  renderProductsStock();
+}
+
+function renderProductsStock() {
+  const container = document.getElementById('productsStockList');
+  const searchQuery = (document.getElementById('productSearch').value || '').toLowerCase().trim();
+  
+  let filtered = products.filter(p => !p.blocked);
+  
+  // Поиск
+  if (searchQuery) {
+    filtered = filtered.filter(p => 
+      (p.title || '').toLowerCase().includes(searchQuery) ||
+      (p.category || '').toLowerCase().includes(searchQuery)
+    );
+  }
+  
+  // Фильтр по складу
+  if (selectedWarehouseFilter !== 'all') {
+    filtered = filtered.filter(p => {
+      const ws = p.warehouseStock || {};
+      return (ws[selectedWarehouseFilter] || 0) > 0;
+    });
+  }
+  
+  // Сортировка: по общему остатку (от меньшего к большему), потом по названию
+  filtered.sort((a, b) => {
+    const aTotal = getProductTotalStock(a);
+    const bTotal = getProductTotalStock(b);
+    if (aTotal === 0 && bTotal > 0) return 1;
+    if (aTotal > 0 && bTotal === 0) return -1;
+    return (a.title || '').localeCompare(b.title || '');
+  });
+  
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="emoji">📭</div><p>Товары не найдены</p></div>';
+    return;
+  }
+  
+  let html = '';
+  filtered.forEach(p => {
+    const ws = p.warehouseStock || {};
+    const totalStock = getProductTotalStock(p);
+    
+    // Индикатор остатка
+    let indicatorClass = 'green';
+    if (totalStock <= 0) indicatorClass = 'red';
+    else if (totalStock <= 5) indicatorClass = 'yellow';
+    
+    // Бейджи по складам
+    let badgesHtml = '';
+    warehouses.forEach(wh => {
+      const qty = ws[wh.id] || 0;
+      badgesHtml += `<span class="product-warehouse-badge ${qty === 0 ? 'zero' : ''}">${esc(wh.name)}: ${qty}</span>`;
+    });
+    
+    html += `
+      <div class="product-stock-card" onclick="editProductStock('${esc(p.id)}')">
+        <img src="${p.image || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Ctext y=%2218%22 font-size=%2218%22%3E📦%3C/text%3E%3C/svg%3E'}" alt="${esc(p.title)}" loading="lazy">
+        <div class="product-stock-info">
+          <div class="product-stock-title"><span class="stock-indicator ${indicatorClass}"></span>${esc(p.title) || 'Без названия'}</div>
+          <div class="product-stock-category">${esc(p.category) || 'Без категории'} • ${p.price || 0} сом</div>
+          <div class="product-warehouse-grid">${badgesHtml}</div>
+        </div>
+        <div class="product-stock-total">
+          <div class="total-value">${totalStock}</div>
+          <div class="total-label">всего</div>
+        </div>
+      </div>
+    `;
+  });
+  
+  container.innerHTML = html;
+}
+
+function getProductTotalStock(product) {
+  const ws = product.warehouseStock || {};
+  const whTotal = Object.values(ws).reduce((sum, v) => sum + (v || 0), 0);
+  if (whTotal > 0) return whTotal;
+  return typeof product.stock === 'number' ? product.stock : 0;
+}
+
+// Быстрое редактирование остатков товара по складам
+async function editProductStock(productId) {
+  const product = products.find(p => p.id === productId);
+  if (!product) return;
+  
+  if (warehouses.length === 0) {
+    Swal.fire('Нет складов', 'Сначала добавьте хотя бы один склад', 'info');
+    return;
+  }
+  
+  const ws = product.warehouseStock || {};
+  
+  let inputsHtml = '';
+  warehouses.forEach((wh, i) => {
+    const qty = ws[wh.id] || 0;
+    inputsHtml += `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f0f0f0;">
+        <span style="font-weight:600;">${wh.name}</span>
+        <input type="number" id="swal-wh-${i}" value="${qty}" min="0" 
+          style="width:80px; padding:8px; border:1px solid #ddd; border-radius:8px; text-align:center; font-size:16px; font-weight:700;" inputmode="numeric">
+      </div>
+    `;
+  });
+  
+  const result = await Swal.fire({
+    title: product.title || 'Товар',
+    html: `
+      <div style="text-align:left; margin-top:10px;">
+        <p style="font-size:13px; color:#888; margin-bottom:12px;">Введите количество для каждого склада:</p>
+        ${inputsHtml}
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: '💾 Сохранить',
+    cancelButtonText: 'Отмена',
+    preConfirm: () => {
+      const values = {};
+      warehouses.forEach((wh, i) => {
+        values[wh.id] = parseInt(document.getElementById(`swal-wh-${i}`).value) || 0;
+      });
+      return values;
+    }
+  });
+  
+  if (!result.isConfirmed) return;
+  
+  try {
+    const newWs = result.value;
+    const totalStock = Object.values(newWs).reduce((sum, v) => sum + (v || 0), 0);
+    
+    const editBatch = db.batch();
+    const productRef = db.collection('products').doc(productId);
+    editBatch.update(productRef, {
+      warehouseStock: newWs,
+      stock: totalStock
+    });
+    
+    // Записываем движения в тот же batch
+    const oldWs = product.warehouseStock || {};
+    for (const whId of Object.keys(newWs)) {
+      const oldQty = oldWs[whId] || 0;
+      const newQty = newWs[whId] || 0;
+      if (oldQty !== newQty) {
+        const wh = warehouses.find(w => w.id === whId);
+        const movRef = db.collection('warehouseMovements').doc();
+        editBatch.set(movRef, {
+          productId,
+          productTitle: product.title || '',
+          warehouseId: whId,
+          warehouseName: wh ? wh.name : '',
+          type: 'adjustment',
+          qty: Math.abs(newQty - oldQty),
+          direction: newQty > oldQty ? 'in' : 'out',
+          oldQty,
+          newQty,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          note: 'Ручная корректировка'
+        });
+      }
+    }
+    
+    await editBatch.commit();
+    
+    Swal.fire({ icon: 'success', title: 'Остатки обновлены!', timer: 1500, showConfirmButton: false });
+    
+    await loadProducts();
+    updateStats();
+    renderProductsStock();
+    renderWarehouses();
+  } catch (e) {
+    Swal.fire('Ошибка', e.message, 'error');
+  }
+}
+
+// ==================== ИСТОРИЯ ДВИЖЕНИЙ (ТАБ 3) ====================
+function renderMovements() {
+  const container = document.getElementById('movementsList');
+  
+  if (movements.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">📋</div>
+        <p>Нет движений</p>
+        <p style="font-size:13px; margin-top:8px;">История появится после первого перемещения</p>
+      </div>
+    `;
+    return;
+  }
+  
+  let html = '';
+  let currentDate = '';
+  
+  movements.forEach(m => {
+    // Дата-разделитель
+    const date = m.createdAt ? new Date(m.createdAt.seconds * 1000).toLocaleDateString('ru-RU') : 'Неизвестно';
+    if (date !== currentDate) {
+      currentDate = date;
+      html += `<div style="font-weight:700; color:#666; padding:12px 0 6px; font-size:13px; border-bottom:1px solid #eee;">${date}</div>`;
+    }
+    
+    const time = m.createdAt ? new Date(m.createdAt.seconds * 1000).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '';
+    
+    let icon, description, color;
+    switch (m.type) {
+      case 'transfer':
+        icon = '🔄';
+        description = `${esc(m.fromWarehouseName)} → ${esc(m.toWarehouseName)}`;
+        color = '#1565c0';
+        break;
+      case 'receipt':
+        icon = '📥';
+        description = `Приход: ${esc(m.warehouseName)}`;
+        color = '#2e7d32';
+        break;
+      case 'sale':
+        icon = '🛒';
+        description = `Продажа: ${esc(m.warehouseName)}`;
+        color = '#e65100';
+        break;
+      case 'adjustment':
+        icon = '✏️';
+        description = m.direction === 'in' ? `Приход: ${esc(m.warehouseName)}` : `Списание: ${esc(m.warehouseName)}`;
+        color = m.direction === 'in' ? '#2e7d32' : '#c62828';
+        break;
+      default:
+        icon = '📋';
+        description = esc(m.note) || 'Движение';
+        color = '#666';
+    }
+    
+    html += `
+      <div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #f5f5f5;">
+        <div style="font-size:24px;">${icon}</div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(m.productTitle)}</div>
+          <div style="font-size:12px; color:${color}; font-weight:600;">${description}</div>
+          <div style="font-size:11px; color:#999;">${time}</div>
+        </div>
+        <div style="text-align:center; min-width:50px;">
+          <div style="font-size:18px; font-weight:700; color:${m.direction === 'in' ? '#2e7d32' : '#c62828'};">
+            ${m.direction === 'in' ? '+' : '-'}${m.qty}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  
+  container.innerHTML = html;
+}
+</script>
+
+</body>
+</html>

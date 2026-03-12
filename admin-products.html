@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <script>if(window.parent!==window)document.write('<style>.bottom-nav,#bottomNavBar{display:none!important}body{padding-bottom:0!important}#addProductWindow{bottom:0!important}</style>')</script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Добавить товар - Кербен</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+    input, textarea, select {
+      font-family: inherit;
+      font-size: 16px;
+    }
+    
+
+  </style>
+</head>
+<body>
+  <!-- Форма добавления товара - НА ВЕСЬ ЭКРАН -->
+  <div id="addProductWindow" style="position:fixed; top:0; left:0; right:0; bottom:56px; background:#fff; z-index:9650;">
+    <div style="background:#fff; width:100%; height:100%; max-width:100%; max-height:100%; margin:0; border-radius:0; overflow:hidden; display:flex; flex-direction:column; contain:content;">
+      
+      <!-- Шапка -->
+      <div style="background:linear-gradient(90deg, #ff6b6b, #ee5a6f); color:white; padding:20px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h2 style="margin:0; font-size:24px;">➕ Добавить товар</h2>
+          <p style="margin:5px 0 0; opacity:0.9; ">Заполните информацию о товаре</p>
+        </div>
+        <button onclick="closeAddProductWindow()" style="background:rgba(255,255,255,0.2); color:white; border:none; font-size:28px; width:48px; height:48px; min-width:48px; min-height:48px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;">&times;</button>
+      </div>
+
+      <!-- Форма -->
+      <div style="flex:1; overflow-y:auto; padding:20px; padding-top:24px;">
+        <div style="display:flex; flex-direction:column; gap:18px;">
+          
+<input type="text" id="newTitle" placeholder="Название товара" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding:14px; border:1px solid #ddd; border-radius:8px; min-height:48px; font-size:16px;">
+          
+          <textarea id="newDescription" placeholder="📝 Описание товара (для корейских товаров, часов и электроники)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding:14px; border:1px solid #ddd; border-radius:8px; min-height:70px; resize:vertical; font-size:16px;"></textarea>
+          
+          <input type="number" id="newCostPrice" placeholder="💵 Цена закупки (необязательно)" step="0.01" inputmode="decimal" autocomplete="off" style="padding:14px; border:1px solid #ddd; border-radius:8px; min-height:48px; font-size:16px;">
+          
+          <input type="number" id="newPrice" placeholder="💰 Цена продажи (розничная)" step="0.01" inputmode="decimal" autocomplete="off" style="padding:14px; border:1px solid #ddd; border-radius:8px; min-height:48px; font-size:16px;">
+          
+          <div id="profitDisplay" style="padding: 12px; background: #e8f5e9; border-radius: 8px; display: none; text-align: center;">
+            <strong>📊 Наценка:</strong> <span id="profitAmount">0</span> сом (<span id="profitPercent">0</span>%)
+          </div>
+          
+          <div style="display:flex; gap:8px; align-items:center;">
+            <select id="newCategory" style="flex:1; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; min-height:48px;">
+              <option value="">Выберите категорию</option>
+              <option value="все" data-category="все">Все товары</option>
+              <option value="ножницы" data-category="ножницы">✂️ Ножницы</option>
+              <option value="скотч" data-category="скотч">Скотч</option>
+              <option value="нож" data-category="нож">🔪 Нож</option>
+              <option value="корейские" data-category="корейские">Корейские товары</option>
+              <option value="часы" data-category="часы">⌚ Часы</option>
+              <option value="электроника" data-category="электроника">🔌 Электроника</option>
+              <option value="бытовые" data-category="бытовые">Бытовые техники</option>
+            </select>
+            <button type="button" onclick="showNewCategoryInput()" style="width:48px; height:48px; min-width:48px; min-height:48px; flex-shrink:0; background:linear-gradient(135deg, #ff9a56, #ff6b35); color:white; border:none; border-radius:8px; cursor:pointer; font-size:20px; display:flex; align-items:center; justify-content:center;" title="Добавить новую категорию">➕</button>
+          </div>
+          
+          <!-- Поле для новой категории -->
+          <div id="newCategoryInputDiv" style="display:none;">
+            <div style="display:flex; gap:8px; align-items:center;">
+              <input type="text" id="newCategoryInput" placeholder="🆕 Введите название новой категории" style="flex:1; padding:14px; min-height:48px; border:2px solid #ff6b35; border-radius:8px; background:#fff8f5; font-size:16px;">
+              <button type="button" onclick="hideNewCategoryInput()" style="width:48px; height:48px; min-width:48px; min-height:48px; flex-shrink:0; background:#dc3545; color:white; border:none; border-radius:8px; cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center;">✕</button>
+            </div>
+            <p style="margin:5px 0 0; font-size:12px; color:#ff6b35;">⚡ Введите название новой категории для вашего товара</p>
+          </div>
+          
+          <input type="number" id="newOptPrice" placeholder="Оптовая цена" inputmode="decimal" autocomplete="off" style="padding:14px; border:1px solid #ddd; border-radius:8px; min-height:48px; font-size:16px;">
+          
+          <input type="number" id="newOptQty" placeholder="Минимальное количество для опта" inputmode="numeric" autocomplete="off" style="padding:14px; border:1px solid #ddd; border-radius:8px; min-height:48px; font-size:16px;">
+          
+          <input type="number" id="newMinQty" placeholder="Минимальное количество для покупки" inputmode="numeric" autocomplete="off" style="padding:14px; border:1px solid #ddd; border-radius:8px; min-height:48px; font-size:16px;">
+
+          <input type="number" id="newStock" placeholder="📦 Остаток (если пусто — без лимита)" min="0" step="1" inputmode="numeric" autocomplete="off" style="padding:14px; border:1px solid #ddd; border-radius:8px; min-height:48px; font-size:16px;">
+          
+          <!-- Редактор вариантов товара -->
+          <div id="variantEditorSection"></div>
+          
+          <!-- Настройка для товаров-пачек -->
+          <div style="background:#f3e5f5; border:2px solid #9c27b0; border-radius:8px; padding:14px;">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+              <input type="checkbox" id="newIsPack" style="width:24px; height:24px; min-width:24px; min-height:24px; cursor:pointer;" onchange="togglePackQtyField()">
+              <label for="newIsPack" style="font-weight:600; color:#7b1fa2; cursor:pointer;">📦 Это пачка (продаётся только пачками)</label>
+            </div>
+            <input type="number" id="newPackQty" placeholder="Сколько штук в 1 пачке (напр. 6)" min="1" step="1" inputmode="numeric" autocomplete="off" style="display:none; width:100%; padding:10px; border:1px solid #ce93d8; border-radius:6px;  background:#fce4ec; margin-bottom:8px;" oninput="updatePackCalculationPreview()">
+            <input type="number" id="newPacksPerBox" placeholder="Сколько пачек в 1 коробке (напр. 20)" min="1" step="1" inputmode="numeric" autocomplete="off" style="display:none; width:100%; padding:10px; border:1px solid #ce93d8; border-radius:6px;  background:#fff3e0;" oninput="updatePackCalculationPreview()">
+            <div id="packCalculationPreview" style="display:none; margin-top:8px; padding:10px; background:#e8f5e9; border-radius:6px; font-size:13px; color:#2e7d32;"></div>
+          </div>
+          
+          <div style="display: flex; gap: 10px; align-items: center; width: 100%; overflow: hidden;">
+            <input type="file" id="imageFile" accept="image/*" style="flex: 1; min-width: 0; padding:12px; min-height:48px; border:1px solid #ddd; border-radius:8px;">
+            <input type="file" id="galleryFile" accept="image/*" style="display: none;">
+            <button id="openGallery" style="padding:12px 15px; min-height:48px; background:#007bff; color:white; border:none; border-radius:8px; cursor:pointer; white-space:nowrap; flex-shrink: 0;" onclick="document.getElementById('galleryFile').click()">📁 Галерея</button>
+          </div>
+          
+          <input type="text" id="newImage" placeholder="URL изображения (опционально)" autocomplete="off" style="padding:14px; border:1px solid #ddd; border-radius:8px; min-height:48px;">
+          
+          <!-- Дополнительные фото -->
+          <div style="background:#e3f2fd; border:2px solid #2196f3; border-radius:8px; padding:14px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+              <label style="font-weight:600; color:#1565c0;">📷 Дополнительные фото (до 5 шт)</label>
+              <button type="button" onclick="addExtraPhotoField()" style="background:#2196f3; color:white; border:none; padding:10px 14px; min-height:44px; border-radius:6px; cursor:pointer; font-size:13px;">+ Добавить фото</button>
+            </div>
+            <div id="extraPhotosContainer" style="display:flex; flex-direction:column; gap:10px;"></div>
+            <div id="extraPhotosPreview" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;"></div>
+          </div>
+          
+          <button id="previewUrlBtn" style="padding:14px; min-height:48px; background:#6c757d; color:white; border:none; border-radius:8px; cursor:pointer;">👁️ Показать предпросмотр</button>
+          
+          <div id="imagePreview" style="display: none; text-align:center; padding:10px; background:#f8f9fa; border-radius:8px;">
+            <img id="previewImg" src="" alt="Предпросмотр" style="max-width: 100%; max-height: 200px; border-radius:8px;">
+          </div>
+        </div>
+      </div>
+<!-- Кнопки действий -->
+      <div style="padding:20px; background:#f8f9fa; border-top:1px solid #e0e0e0; display:flex; gap:10px;">
+        <button id="addProductBtn" style="flex:1; padding:16px; min-height:52px; background:linear-gradient(90deg, #28a745, #20c997); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:16px;">✅ Добавить товар</button>
+      </div>
+  
+     </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/exif-js@2.3.0/exif.min.js"></script>
+<script>
+// ============ ИНИЦИАЛИЗАЦИЯ FIREBASE ============
+const firebaseConfig = {
+  apiKey: "AIzaSyBRQ6hH7kXq7ApJmqbvTG1EQsXwxWEnaGg",
+  authDomain: "svoysayet.firebaseapp.com",
+  projectId: "svoysayet",
+  storageBucket: "svoysayet.firebasestorage.app",
+  messagingSenderId: "450143000217",
+  appId: "1:450143000217:web:7495cefaea0b94966e8a08",
+  measurementId: "G-Y8VG9E29FY"
+};
+
+let db, storage;
+let products = [];
+
+function initFirebase() {
+  try {
+    if (typeof firebase === 'undefined') throw new Error('Firebase SDK не загружен');
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    db = firebase.firestore();
+    storage = firebase.storage();
+    console.log('Firebase initialized successfully');
+    loadProducts(); // Загружаем товары после инициализации
+    loadSellerCategoriesForSelect(); // Загружаем категории продавцов
+  } catch (error) {
+    console.error('Firebase initialization error:', error);
+    Swal.fire('Ошибка', 'Ошибка инициализации Firebase: ' + error.message, 'error');
+  }
+}
+
+if (typeof firebase !== 'undefined') {
+  initFirebase();
+} else {
+  window.addEventListener('load', initFirebase);
+}
+
+// ============ ЗАГРУЗКА ТОВАРОВ ============
+async function loadProducts() {
+  try {
+    const snapshot = await db.collection('products').orderBy('order', 'desc').get();
+    products = [];
+    snapshot.forEach(doc => {
+      products.push({ id: doc.id, ...doc.data() });
+    });
+    console.log('Loaded products:', products.length);
+  } catch (error) {
+    console.error('Error loading products:', error);
+  }
+}
+
+// ============ ПЕРЕМЕННЫЕ ============
+let extraPhotoUrls = [];
+let extraPhotoCounter = 0;
+let packCalcPreviewTimeout = null;
+const _packCalcIsIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+// ============ СКРЫВАЕМ ПОЛЯ ТОЛЬКО ДЛЯ АДМИНА ОТ ПРОДАВЦОВ ============
+(function() {
+  try {
+    const sellerRaw = localStorage.getItem('currentSeller');
+    if (sellerRaw && JSON.parse(sellerRaw).id) {
+      // Продавец — скрываем цену закупки и наценку
+      const costPriceField = document.getElementById('newCostPrice');
+      const profitDisplay = document.getElementById('profitDisplay');
+      if (costPriceField) costPriceField.style.display = 'none';
+      if (profitDisplay) profitDisplay.style.display = 'none';
+    }
+  } catch(e) {}
+})();
+
+// ============ ФУНКЦИЯ ЗАКРЫТИЯ ОКНА ============
+function closeAddProductWindow() {
+  window.location.href = 'profile.html';
+}
+
+// ============ ФУНКЦИИ ДЛЯ КАТЕГОРИЙ ============
+
+// Загрузка категорий продавцов из Firebase
+async function loadSellerCategoriesForSelect() {
+  try {
+    const categorySelect = document.getElementById('newCategory');
+    if (!categorySelect) return;
+    
+    // Стандартные категории (уже есть в HTML)
+    const standardCategories = ['все', 'ножницы', 'скотч', 'нож', 'корейские', 'часы', 'электроника', 'бытовые'];
+    
+    // Загружаем категории из seller_categories
+    const snapshot = await db.collection('seller_categories').get();
+    
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const catName = data.name;
+      if (catName && !standardCategories.includes(catName.toLowerCase())) {
+        // Проверяем, нет ли уже такой опции
+        const exists = Array.from(categorySelect.options).some(opt => opt.value.toLowerCase() === catName.toLowerCase());
+        if (!exists) {
+          const option = document.createElement('option');
+          option.value = catName.toLowerCase();
+          option.textContent = '🏪 ' + catName;
+          option.setAttribute('data-category', catName.toLowerCase());
+          categorySelect.appendChild(option);
+        }
+      }
+    });
+    
+    console.log('✅ Категории продавцов загружены для формы добавления');
+  } catch (error) {
+    console.error('Ошибка загрузки категорий:', error);
+  }
+}
+
+function showNewCategoryInput() {
+  document.getElementById('newCategoryInputDiv').style.display = 'block';
+  document.getElementById('newCategory').disabled = true;
+  document.getElementById('newCategoryInput').focus();
+}
+
+function hideNewCategoryInput() {
+  document.getElementById('newCategoryInputDiv').style.display = 'none';
+  document.getElementById('newCategory').disabled = false;
+  document.getElementById('newCategoryInput').value = '';
+}
+
+// ============ ФУНКЦИИ ДЛЯ ПАЧЕК ============
+function togglePackQtyField() {
+  const isPackCheckbox = document.getElementById('newIsPack');
+  const packQtyInput = document.getElementById('newPackQty');
+  const packsPerBoxInput = document.getElementById('newPacksPerBox');
+  const calcPreview = document.getElementById('packCalculationPreview');
+  
+  if (isPackCheckbox.checked) {
+    packQtyInput.style.display = 'block';
+    packsPerBoxInput.style.display = 'block';
+    packQtyInput.placeholder = 'Сколько штук в 1 пачке (напр. 6)';
+    if (!packQtyInput.value) packQtyInput.value = 6;
+    if (!packsPerBoxInput.value) packsPerBoxInput.value = 20;
+    updatePackCalculationPreview();
+  } else {
+    packQtyInput.style.display = 'none';
+    packsPerBoxInput.style.display = 'none';
+    calcPreview.style.display = 'none';
+    packQtyInput.value = '';
+    packsPerBoxInput.value = '';
+  }
+}
+
+function doPackCalculation() {
+  const packQty = parseInt(document.getElementById('newPackQty').value) || 0;
+  const packsPerBox = parseInt(document.getElementById('newPacksPerBox').value) || 0;
+  const calcPreview = document.getElementById('packCalculationPreview');
+  
+  if (packQty > 0 && packsPerBox > 0) {
+    calcPreview.style.display = 'block';
+    calcPreview.innerHTML = `
+      <div style="font-weight:700;margin-bottom:4px;">📊 Расчёт для клиента:</div>
+      <div>📦 1 пачка = <b>${packQty}</b> шт</div>
+      <div style="margin-top:4px;font-size:12px;color:#1565c0;">💡 Клиент введёт кол-во ПАЧЕК, а не штук!</div>
+    `;
+  } else {
+    calcPreview.style.display = 'none';
+  }
+}
+
+function updatePackCalculationPreview() {
+  if (_packCalcIsIOS) {
+    return;
+  }
+  clearTimeout(packCalcPreviewTimeout);
+  packCalcPreviewTimeout = setTimeout(doPackCalculation, 150);
+}
+
+// ============ ДОПОЛНИТЕЛЬНЫЕ ФОТО ============
+function addExtraPhotoField() {
+  const container = document.getElementById('extraPhotosContainer');
+  const currentFields = container.querySelectorAll('.extra-photo-field').length;
+  
+  if (currentFields >= 5) {
+    Swal.fire('Ограничение', 'Можно добавить максимум 5 дополнительных фото', 'warning');
+    return;
+  }
+  
+  extraPhotoCounter++;
+  const fieldId = extraPhotoCounter;
+  
+  const fieldDiv = document.createElement('div');
+  fieldDiv.className = 'extra-photo-field';
+  fieldDiv.id = `extraPhotoField_${fieldId}`;
+  fieldDiv.style.cssText = 'display:flex; gap:8px; align-items:center;';
+  fieldDiv.innerHTML = `
+    <input type="file" accept="image/*" onchange="handleExtraPhotoFile(this, ${fieldId})" style="flex:1; padding:8px; border:1px solid #90caf9; border-radius:6px; font-size:12px;">
+    <input type="text" placeholder="или URL фото" id="extraPhotoUrl_${fieldId}" onchange="handleExtraPhotoUrl(this, ${fieldId})" style="flex:1; padding:8px; border:1px solid #90caf9; border-radius:6px; font-size:12px;">
+    <button type="button" onclick="removeExtraPhotoField(${fieldId})" style="background:#dc3545; color:white; border:none; width:32px; height:32px; border-radius:6px; cursor:pointer; font-size:16px;">✕</button>
+  `;
+  
+  container.appendChild(fieldDiv);
+}
+
+async function handleExtraPhotoFile(input, fieldId) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  try {
+    Swal.fire({
+      title: 'Загрузка фото...',
+      text: 'Подождите...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+    
+    const url = await uploadToImgBB(file);
+    
+    extraPhotoUrls = extraPhotoUrls.filter(p => p.fieldId !== fieldId);
+    extraPhotoUrls.push({ fieldId, url });
+    
+    updateExtraPhotosPreview();
+    Swal.close();
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'Фото загружено!',
+      toast: true,
+      position: 'bottom',
+      timer: 2000,
+      showConfirmButton: false
+    });
+    
+  } catch (error) {
+    console.error('Ошибка загрузки фото:', error);
+    Swal.fire('Ошибка', 'Не удалось загрузить фото: ' + error.message, 'error');
+  }
+}
+
+function handleExtraPhotoUrl(input, fieldId) {
+  const url = input.value.trim();
+  if (!url) {
+    extraPhotoUrls = extraPhotoUrls.filter(p => p.fieldId !== fieldId);
+    updateExtraPhotosPreview();
+    return;
+  }
+  
+  extraPhotoUrls = extraPhotoUrls.filter(p => p.fieldId !== fieldId);
+  extraPhotoUrls.push({ fieldId, url });
+  updateExtraPhotosPreview();
+}
+
+function removeExtraPhotoField(fieldId) {
+  const field = document.getElementById(`extraPhotoField_${fieldId}`);
+  if (field) field.remove();
+  
+  extraPhotoUrls = extraPhotoUrls.filter(p => p.fieldId !== fieldId);
+  updateExtraPhotosPreview();
+}
+
+function updateExtraPhotosPreview() {
+  const preview = document.getElementById('extraPhotosPreview');
+  if (!preview) return;
+  
+  preview.innerHTML = extraPhotoUrls.map(p => `
+    <img src="${p.url}" alt="Фото" style="width:60px; height:60px; object-fit:cover; border-radius:6px; border:2px solid #2196f3;">
+  `).join('');
+}
+
+// ============ ЗАГРУЗКА ИЗОБРАЖЕНИЙ ============
+async function fixImageOrientation(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      const img = new Image();
+      
+      img.onload = () => {
+        console.log('🖼️ Загружено изображение:', file.name, `${img.naturalWidth}x${img.naturalHeight}`);
+        
+        if (typeof EXIF === 'undefined') {
+          console.warn('EXIF библиотека не загружена, пропускаем коррекцию ориентации');
+          resolve(file);
+          return;
+        }
+        
+        EXIF.getData(img, function() {
+          const orientation = EXIF.getTag(this, "Orientation") || 1;
+          console.log('📐 EXIF Orientation:', orientation);
+          
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          let width = img.naturalWidth;
+          let height = img.naturalHeight;
+          
+          const MAX_SIZE = 1200;
+          if (width > MAX_SIZE || height > MAX_SIZE) {
+            const ratio = Math.min(MAX_SIZE / width, MAX_SIZE / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+            console.log('📉 Изображение уменьшено до:', width, 'x', height);
+          }
+          
+          if (orientation > 4 && orientation < 9) {
+            canvas.width = height;
+            canvas.height = width;
+          } else {
+            canvas.width = width;
+            canvas.height = height;
+          }
+          
+          ctx.save();
+          
+          switch (orientation) {
+            case 2: ctx.translate(width, 0); ctx.scale(-1, 1); break;
+            case 3: ctx.translate(width, height); ctx.rotate(Math.PI); break;
+            case 4: ctx.translate(0, height); ctx.scale(1, -1); break;
+            case 5: ctx.rotate(0.5 * Math.PI); ctx.scale(1, -1); break;
+            case 6: ctx.rotate(0.5 * Math.PI); ctx.translate(0, -height); break;
+            case 7: ctx.rotate(0.5 * Math.PI); ctx.translate(width, -height); ctx.scale(-1, 1); break;
+            case 8: ctx.rotate(-0.5 * Math.PI); ctx.translate(-width, 0); break;
+          }
+          
+          ctx.drawImage(img, 0, 0, width, height);
+          ctx.restore();
+          
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const fixedFile = new File([blob], file.name, {
+                type: file.type || 'image/jpeg',
+                lastModified: Date.now()
+              });
+              console.log('✅ Создан исправленный файл:', Math.round(fixedFile.size / 1024), 'KB');
+              resolve(fixedFile);
+            } else {
+              resolve(file);
+            }
+          }, file.type || 'image/jpeg', 0.92);
+        });
+      };
+      
+      img.onerror = () => resolve(file);
+      img.src = e.target.result;
+    };
+    
+    reader.onerror = () => resolve(file);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadToImgBB(file) {
+  console.log('📤 Начинаем загрузку на ImgBB:', file.name);
+  
+  const fixedFile = await fixImageOrientation(file);
+  console.log('📤 Загружаем исправленный файл на ImgBB');
+  
+  const apiKey = '3dcd4dce37fa365cc2ee66890444ce4b';
+  
+  // Конвертируем файл в base64
+  const base64 = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64String = reader.result.split(',')[1];
+      resolve(base64String);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(fixedFile);
+  });
+
+  const formData = new FormData();
+  formData.append('image', base64);
+
+  try {
+    const res = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await res.json();
+    console.log('📥 Ответ ImgBB:', data);
+    
+    if (data.success && data.data.url) {
+      console.log('✅ Файл успешно загружен на ImgBB:', data.data.url);
+      return data.data.url;
+    } else {
+      throw new Error('Ошибка загрузки на ImgBB: ' + (data.error?.message || JSON.stringify(data)));
+    }
+  } catch (err) {
+    console.error('❌ Ошибка при загрузке:', err);
+    throw err;
+  }
+}
+
+async function checkImage(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = url;
+  });
+}
+
+function sanitizeProductTitle(value) {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  const cleaned = trimmed.replace(/^[\s'"""'`´«»]+|[\s'"""'`´«»]+$/g, '').trim();
+  return cleaned || trimmed;
+}
+
+// ============ РАСЧЁТ НАЦЕНКИ ============
+function setupProfitCalculator() {
+  const costPriceInput = document.getElementById('newCostPrice');
+  const salePriceInput = document.getElementById('newPrice');
+  const profitDisplay = document.getElementById('profitDisplay');
+  const profitAmount = document.getElementById('profitAmount');
+  const profitPercent = document.getElementById('profitPercent');
+  
+  function calculateProfit() {
+    const costPrice = parseFloat(costPriceInput.value) || 0;
+    const salePrice = parseFloat(salePriceInput.value) || 0;
+    
+    if (costPrice > 0 && salePrice > 0) {
+      const profit = salePrice - costPrice;
+      const profitPercentage = ((profit / costPrice) * 100).toFixed(2);
+      
+      profitAmount.textContent = profit.toFixed(2);
+      profitPercent.textContent = profitPercentage;
+      profitDisplay.style.display = 'block';
+      
+      if (profit > 0) {
+        profitDisplay.style.background = '#e8f5e9';
+        profitDisplay.style.color = '#2e7d32';
+      } else if (profit < 0) {
+        profitDisplay.style.background = '#ffebee';
+        profitDisplay.style.color = '#c62828';
+      } else {
+        profitDisplay.style.background = '#fff3e0';
+        profitDisplay.style.color = '#ef6c00';
+      }
+    } else {
+      profitDisplay.style.display = 'none';
+    }
+  }
+  
+  if (costPriceInput && salePriceInput) {
+    if (_packCalcIsIOS) {
+      costPriceInput.addEventListener('blur', calculateProfit);
+      salePriceInput.addEventListener('blur', calculateProfit);
+    } else {
+      let profitCalculationTimeout = null;
+      function debouncedCalculateProfit() {
+        clearTimeout(profitCalculationTimeout);
+        profitCalculationTimeout = setTimeout(calculateProfit, 300);
+      }
+      costPriceInput.addEventListener('input', debouncedCalculateProfit);
+      salePriceInput.addEventListener('input', debouncedCalculateProfit);
+    }
+  }
+}
+
+// ============ ОБРАБОТКА ЗАГРУЗКИ ФАЙЛА ============
+document.addEventListener('DOMContentLoaded', function() {
+  setupProfitCalculator();
+  
+  // Для iOS - blur обработчики для пачек
+  if (_packCalcIsIOS) {
+    const packQtyInput = document.getElementById('newPackQty');
+    const packsPerBoxInput = document.getElementById('newPacksPerBox');
+    if (packQtyInput) packQtyInput.addEventListener('blur', doPackCalculation);
+    if (packsPerBoxInput) packsPerBoxInput.addEventListener('blur', doPackCalculation);
+  }
+  
+  // Загрузка файла изображения
+  const imageFileInput = document.getElementById('imageFile');
+  if (imageFileInput) {
+    imageFileInput.addEventListener('change', async function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const addBtn = document.getElementById('addProductBtn');
+      addBtn.disabled = true;
+      addBtn.textContent = 'Загрузка фото...';
+      
+      try {
+        const url = await uploadToImgBB(file);
+        document.getElementById('newImage').value = url;
+        
+        // Показ предпросмотра
+        document.getElementById('previewImg').src = url;
+        document.getElementById('imagePreview').style.display = 'block';
+        
+        addBtn.disabled = false;
+        addBtn.textContent = '✅ Добавить товар';
+        Swal.fire({ icon: 'success', title: 'Фото загружено!', toast: true, position: 'bottom', timer: 2000, showConfirmButton: false });
+      } catch (err) {
+        console.error('Ошибка загрузки:', err);
+        Swal.fire('Ошибка', 'Не удалось загрузить изображение', 'error');
+        addBtn.disabled = false;
+        addBtn.textContent = '✅ Добавить товар';
+      }
+    });
+  }
+  
+  // Кнопка галереи
+  const galleryFileInput = document.getElementById('galleryFile');
+  if (galleryFileInput) {
+    galleryFileInput.addEventListener('change', async function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const addBtn = document.getElementById('addProductBtn');
+      addBtn.disabled = true;
+      addBtn.textContent = 'Загрузка фото...';
+      
+      try {
+        const url = await uploadToImgBB(file);
+        document.getElementById('newImage').value = url;
+        
+        document.getElementById('previewImg').src = url;
+        document.getElementById('imagePreview').style.display = 'block';
+        
+        addBtn.disabled = false;
+        addBtn.textContent = '✅ Добавить товар';
+        Swal.fire({ icon: 'success', title: 'Фото загружено!', toast: true, position: 'bottom', timer: 2000, showConfirmButton: false });
+      } catch (err) {
+        Swal.fire('Ошибка', 'Не удалось загрузить изображение', 'error');
+        addBtn.disabled = false;
+        addBtn.textContent = '✅ Добавить товар';
+      }
+    });
+  }
+  
+  // Кнопка предпросмотра URL
+  const previewBtn = document.getElementById('previewUrlBtn');
+  if (previewBtn) {
+    previewBtn.addEventListener('click', function() {
+      const url = document.getElementById('newImage').value.trim();
+      if (url) {
+        document.getElementById('previewImg').src = url;
+        document.getElementById('imagePreview').style.display = 'block';
+      } else {
+        Swal.fire('', 'Введите URL изображения', 'info');
+      }
+    });
+  }
+});
+
+// ============ ДОБАВЛЕНИЕ ТОВАРА ============
+document.getElementById('addProductBtn').addEventListener('click', async function() {
+  try {
+    console.log('Add product button clicked');
+    const newTitleEl = document.getElementById('newTitle');
+    const rawTitle = newTitleEl ? newTitleEl.value : '';
+    const title = sanitizeProductTitle(rawTitle);
+    if (newTitleEl && title !== rawTitle.trim()) newTitleEl.value = title;
+    
+    const costPrice = parseFloat(document.getElementById('newCostPrice').value) || 0;
+    const price = +document.getElementById('newPrice').value;
+    let category = document.getElementById('newCategory').value;
+    
+    const newCatInput = document.getElementById('newCategoryInput').value.trim();
+    if (newCatInput) {
+      category = newCatInput.toLowerCase();
+    }
+    
+    const optPrice = +document.getElementById('newOptPrice').value;
+    const optQty = +document.getElementById('newOptQty').value;
+    const minQty = +document.getElementById('newMinQty').value;
+    
+    const stockRaw = document.getElementById('newStock') ? String(document.getElementById('newStock').value).trim() : '';
+    let stock = null;
+    if (stockRaw !== '') {
+      const parsed = parseInt(stockRaw, 10);
+      if (isNaN(parsed) || parsed < 0) {
+        Swal.fire('Ошибка', 'Остаток должен быть числом 0 или больше', 'warning');
+        return;
+      }
+      stock = parsed;
+    }
+    
+    const urlInput = document.getElementById('newImage').value.trim();
+    let imageUrl = urlInput;
+    
+    // Валидация
+    if (!title) {
+      Swal.fire('Ошибка', 'Введите название товара', 'warning');
+      return;
+    }
+    if (!price || price <= 0) {
+      Swal.fire('Ошибка', 'Введите цену продажи', 'warning');
+      return;
+    }
+    if (!imageUrl) {
+      Swal.fire('Ошибка', 'Укажите URL изображения или загрузите файл!', 'warning');
+      return;
+    }
+    
+    if (costPrice > 0 && price <= costPrice) {
+      const result = await Swal.fire({
+        title: 'Предупреждение!',
+        text: 'Цена продажи меньше или равна цене закупки. Продолжить?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Да, продолжить',
+        cancelButtonText: 'Отмена'
+      });
+      if (!result.isConfirmed) return;
+    }
+
+    const addBtn = document.getElementById('addProductBtn');
+    addBtn.disabled = true;
+    addBtn.textContent = 'Проверка изображения...';
+    
+    const isValidImage = await checkImage(imageUrl);
+    if (!isValidImage) {
+      addBtn.disabled = false;
+      addBtn.textContent = '✅ Добавить товар';
+      Swal.fire('Ошибка', 'Изображение не загружается! Проверьте ссылку или попробуйте другой файл/URL.', 'error');
+      return;
+    }
+    
+    addBtn.textContent = 'Добавление...';
+
+    let maxOrder = 0;
+    products.forEach(p => {
+      if (typeof p.order === 'number' && p.order > maxOrder) maxOrder = p.order;
+    });
+
+    const description = document.getElementById('newDescription').value.trim();
+    const isPack = document.getElementById('newIsPack').checked;
+    const packQty = parseInt(document.getElementById('newPackQty').value) || 6;
+    const packsPerBox = parseInt(document.getElementById('newPacksPerBox').value) || 20;
+    const extraImages = extraPhotoUrls.map(p => p.url).filter(url => url && url.trim());
+    
+    // Определяем продавца (если залогинен) или админ
+    let _sellerId = 'admin';
+    let _sellerName = 'Главный администратор';
+    try {
+      const _sellerRaw = localStorage.getItem('currentSeller');
+      if (_sellerRaw) {
+        const _seller = JSON.parse(_sellerRaw);
+        if (_seller && _seller.id) {
+          _sellerId = _seller.id;
+          _sellerName = _seller.name || 'Продавец';
+        }
+      }
+    } catch(e) {}
+    
+    const productData = { 
+      title, 
+      description: description || '',
+      costPrice,
+      price,
+      category: category || 'все',
+      optPrice: optPrice > 0 ? optPrice : null,
+      optQty: optQty > 0 ? optQty : null,
+      minQty: minQty > 0 ? minQty : 1,
+      ...(stock !== null ? { stock } : {}),
+      image: imageUrl,
+      extraImages: extraImages.length > 0 ? extraImages : [],
+      order: maxOrder + 1,
+      createdAt: Date.now(),
+      isPack: isPack,
+      packQty: isPack ? packQty : null,
+      packsPerBox: isPack ? packsPerBox : null,
+      sellerId: _sellerId,
+      sellerName: _sellerName,
+      variants: null
+    };
+    
+    console.log('Adding product to Firestore:', productData);
+    const docRef = await db.collection('products').add(productData);
+    console.log('Product added with ID:', docRef.id);
+    
+    // Сохраняем новую категорию если она была введена
+    const newCategoryInputValue = document.getElementById('newCategoryInput').value.trim();
+    if (newCategoryInputValue) {
+      await db.collection('seller_categories').add({
+        name: newCategoryInputValue,
+        sellerId: _sellerId,
+        sellerName: _sellerName,
+        createdAt: Date.now(),
+        status: 'approved'
+      });
+    }
+    
+    Swal.fire('Товар добавлен!', 'Товар успешно добавлен в каталог', 'success');
+    
+    // Очистка формы
+    document.getElementById('newImage').value = '';
+    document.getElementById('newTitle').value = '';
+    document.getElementById('newDescription').value = '';
+    document.getElementById('newCostPrice').value = '';
+    document.getElementById('newPrice').value = '';
+    document.getElementById('newCategory').value = '';
+    document.getElementById('newCategoryInput').value = '';
+    document.getElementById('newCategoryInputDiv').style.display = 'none';
+    document.getElementById('newOptPrice').value = '';
+    document.getElementById('newOptQty').value = '';
+    document.getElementById('newMinQty').value = '';
+    if (document.getElementById('newStock')) document.getElementById('newStock').value = '';
+    document.getElementById('newIsPack').checked = false;
+    document.getElementById('newPackQty').value = '';
+    document.getElementById('newPackQty').style.display = 'none';
+    document.getElementById('newPacksPerBox').value = '';
+    document.getElementById('newPacksPerBox').style.display = 'none';
+    document.getElementById('packCalculationPreview').style.display = 'none';
+    document.getElementById('extraPhotosContainer').innerHTML = '';
+    document.getElementById('extraPhotosPreview').innerHTML = '';
+    extraPhotoUrls = [];
+    document.getElementById('imageFile').value = '';
+    document.getElementById('imagePreview').style.display = 'none';
+    document.getElementById('profitDisplay').style.display = 'none';
+    
+    addBtn.disabled = false;
+    addBtn.textContent = '✅ Добавить товар';
+    
+    // Перезагружаем список товаров
+    await loadProducts();
+    
+  } catch (error) {
+    console.error('Error details:', error);
+    document.getElementById('addProductBtn').disabled = false;
+    document.getElementById('addProductBtn').textContent = '✅ Добавить товар';
+    Swal.fire('Ошибка', `Не удалось добавить товар: ${error.message}`, 'error');
+  }
+});
+</script>
+
+<script src="js/bottom-nav.js?v=28"></script>
+</body>
+</html>

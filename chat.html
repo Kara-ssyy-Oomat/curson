@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <script>
+    if (window.parent === window) {
+      window.location.replace('index.html?page=chat');
+    }
+    if (window.parent !== window) {
+      document.write('<style>.bottom-nav,#bottomNavBar{display:none!important}body{padding-bottom:0!important}.chat-input-area{bottom:0!important}</style>');
+    }
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#667eea">
+  
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-kerben.jpg">
+  <link rel="icon" type="image/jpeg" href="icon-kerben.jpg">
+  
+  <title>Чат - Кербен</title>
+
+  <!-- Предзагрузка DNS -->
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .chat-header {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .back-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: white;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    
+    .chat-header-info { flex: 1; }
+    .chat-header-title { font-size: 17px; font-weight: 600; }
+    .chat-header-status { font-size: 12px; opacity: 0.9; }
+    
+    .change-name-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-bottom: 80px;
+    }
+    
+    .message {
+      max-width: 80%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .message.sent {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    
+    .message.received {
+      background: white;
+      color: #333;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    
+    .message-text { font-size: 15px; line-height: 1.4; }
+    .message-time { font-size: 11px; opacity: 0.7; margin-top: 4px; text-align: right; }
+    
+    .chat-input-area {
+      position: fixed;
+      bottom: 56px;
+      left: 0;
+      right: 0;
+      background: white;
+      padding: 12px 15px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      border-top: 1px solid #e0e0e0;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .chat-input {
+      flex: 1;
+      padding: 12px 18px;
+      border: 1px solid #ddd;
+      border-radius: 25px;
+      font-size: 16px;
+      outline: none;
+    }
+    
+    .chat-input:focus { border-color: #667eea; }
+    
+    .send-btn {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border: none;
+      border-radius: 50%;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+
+    
+    @keyframes blink {
+      0%, 60%, 100% { opacity: 0; }
+      30% { opacity: 1; }
+    }
+    
+    .typing-indicator span {
+      animation: blink 1.4s infinite;
+    }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+  </style>
+  
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+  <header class="chat-header">
+    <a href="#" onclick="goBack(); return false;" class="back-btn">←</a>
+    <div class="chat-header-info">
+      <div class="chat-header-title">💬 Чат с продавцом</div>
+      <div class="chat-header-status" id="clientNameDisplay">Загрузка...</div>
+    </div>
+    <button class="change-name-btn" onclick="changeClientName()">✏️ Имя</button>
+  </header>
+  
+  <div class="chat-messages" id="chatMessages">
+    <div class="message received">
+      <div class="message-text">Здравствуйте! Чем могу помочь?</div>
+      <div class="message-time">Продавец • только что</div>
+    </div>
+  </div>
+  
+  <div class="chat-input-area">
+    <input type="text" class="chat-input" id="chatInput" placeholder="Введите сообщение..." onkeypress="if(event.key==='Enter') sendMessage()">
+    <button class="send-btn" onclick="sendMessage()">➤</button>
+  </div>
+  
+  <script>
+    // Запоминаем изначальный URL при загрузке
+    const initialUrl = window.location.href;
+    
+    // Закрытие iframe или возврат назад
+    function goBack() {
+      if (window.parent !== window && window.location.href === initialUrl) {
+        window.parent.postMessage('closeIframe', '*');
+      } else if (window.parent !== window) {
+        window.location.href = initialUrl;
+      } else {
+        window.location.href = 'index.html';
+      }
+    }
+  </script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBRQ6hH7kXq7ApJmqbvTG1EQsXwxWEnaGg",
+      authDomain: "svoysayet.firebaseapp.com",
+      projectId: "svoysayet",
+      storageBucket: "svoysayet.firebasestorage.app",
+      messagingSenderId: "785840370498",
+      appId: "1:785840370498:web:e08c7cbef96aborc5e81f1"
+    };
+    
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    
+    let clientId = localStorage.getItem('chatClientId');
+    let clientName = localStorage.getItem('chatClientName');
+    
+    if (!clientId) {
+      clientId = 'client_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('chatClientId', clientId);
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    async function init() {
+      // Проверяем профиль
+      const customerData = localStorage.getItem('customerData');
+      if (customerData) {
+        try {
+          const customer = JSON.parse(customerData);
+          if (customer.name && !clientName) {
+            clientName = customer.name;
+            localStorage.setItem('chatClientName', clientName);
+          }
+        } catch(e) {}
+      }
+      
+      if (!clientName) {
+        const { value: name } = await Swal.fire({
+          title: 'Как вас зовут?',
+          input: 'text',
+          inputPlaceholder: 'Введите ваше имя',
+          allowOutsideClick: false,
+          confirmButtonText: 'Начать чат',
+          confirmButtonColor: '#667eea'
+        });
+        
+        if (name) {
+          clientName = name;
+          localStorage.setItem('chatClientName', name);
+        } else {
+          clientName = 'Гость';
+        }
+      }
+      
+      updateClientDisplay();
+      loadMessages();
+      updateCartBadge();
+    }
+    
+    function updateClientDisplay() {
+      const display = document.getElementById('clientNameDisplay');
+      if (display && clientName) {
+        display.innerHTML = `👤 ${clientName} • ID: ${clientId.substring(7, 15)}`;
+      }
+    }
+    
+    async function changeClientName() {
+      const { value: newName } = await Swal.fire({
+        title: 'Изменить имя',
+        input: 'text',
+        inputValue: clientName || '',
+        showCancelButton: true,
+        confirmButtonText: 'Сохранить',
+        cancelButtonText: 'Отмена'
+      });
+      
+      if (newName && newName !== clientName) {
+        clientName = newName;
+        localStorage.setItem('chatClientName', newName);
+        updateClientDisplay();
+        
+        try {
+          await db.collection('chatClients').doc(clientId).update({ name: newName });
+        } catch(e) {}
+        
+        Swal.fire({ icon: 'success', title: 'Имя изменено!', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+      }
+    }
+    
+    // Отслеживание показанных сообщений
+    const shownMessageIds = new Set();
+    
+    async function loadMessages() {
+      try {
+        const messagesDiv = document.getElementById('chatMessages');
+        const snapshot = await db.collection('chatMessages')
+          .where('clientId', '==', clientId)
+          .orderBy('timestamp', 'asc')
+          .limit(100)
+          .get();
+        
+        if (snapshot.empty) {
+          // Запускаем подписку даже если нет сообщений
+          subscribeToNewMessages();
+          return;
+        }
+        
+        messagesDiv.innerHTML = '';
+        
+        snapshot.forEach(doc => {
+          shownMessageIds.add(doc.id); // Запоминаем ID показанного сообщения
+          const msg = doc.data();
+          const time = msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '';
+          const isSent = msg.sender === 'client';
+          
+          // Помечаем непрочитанные сообщения от админа как прочитанные
+          if (msg.sender === 'admin' && !msg.read) {
+            doc.ref.update({ read: true });
+          }
+          
+          const div = document.createElement('div');
+          div.className = `message ${isSent ? 'sent' : 'received'}`;
+          div.innerHTML = `
+            <div class="message-text">${escapeHtml(msg.text)}</div>
+            <div class="message-time">${isSent ? 'Вы' : 'Продавец'} • ${time}</div>
+          `;
+          messagesDiv.appendChild(div);
+        });
+        
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        
+        // Запускаем подписку на новые сообщения
+        subscribeToNewMessages();
+          
+      } catch (error) {
+        console.error('Ошибка загрузки сообщений:', error);
+      }
+    }
+    
+    function subscribeToNewMessages() {
+      db.collection('chatMessages')
+        .where('clientId', '==', clientId)
+        .orderBy('timestamp', 'asc')
+        .onSnapshot(snapshot => {
+          snapshot.docChanges().forEach(change => {
+            if (change.type === 'added') {
+              const docId = change.doc.id;
+              // Пропускаем уже показанные сообщения
+              if (shownMessageIds.has(docId)) return;
+              
+              shownMessageIds.add(docId);
+              const msg = change.doc.data();
+              
+              // Показываем только сообщения от админа
+              if (msg.sender === 'admin') {
+                addMessageToUI(msg.text, 'received', new Date(msg.timestamp?.seconds * 1000 || Date.now()));
+                showNewMessageNotification('Новое сообщение от продавца');
+                if (!msg.read) {
+                  change.doc.ref.update({ read: true });
+                }
+              }
+            }
+          });
+        });
+    }
+    
+    // Уведомление о новом сообщении
+    let originalTitle = document.title;
+    let titleBlinkInterval = null;
+    let audioCtx = null;
+    
+    function showNewMessageNotification(text) {
+      console.log('🔔 Уведомление:', text);
+      
+      // Звук уведомления 
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        oscillator.start(audioCtx.currentTime);
+        oscillator.stop(audioCtx.currentTime + 0.3);
+      } catch(e) { console.log('Ошибка звука:', e); }
+      
+      // Мигание заголовка (всегда показываем)
+      let isOriginal = true;
+      if (titleBlinkInterval) clearInterval(titleBlinkInterval);
+      titleBlinkInterval = setInterval(() => {
+        document.title = isOriginal ? '💬 ' + text : originalTitle;
+        isOriginal = !isOriginal;
+      }, 1000);
+        
+      // Остановка при фокусе
+      window.addEventListener('focus', function stopBlink() {
+        clearInterval(titleBlinkInterval);
+        document.title = originalTitle;
+        window.removeEventListener('focus', stopBlink);
+      }, { once: true });
+      
+      // Браузерное уведомление
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Кербен - Чат', { body: text, icon: 'icon-kerben.jpg' });
+      }
+    }
+    
+    // Запрос разрешения на уведомления
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+    
+    function addMessageToUI(text, type, timestamp) {
+      const messagesDiv = document.getElementById('chatMessages');
+      const time = timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      
+      const div = document.createElement('div');
+      div.className = `message ${type === 'sent' ? 'sent' : 'received'}`;
+      div.innerHTML = `
+        <div class="message-text">${escapeHtml(text)}</div>
+        <div class="message-time">${type === 'sent' ? 'Вы' : 'Продавец'} • ${time}</div>
+      `;
+      messagesDiv.appendChild(div);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+    
+    async function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+      
+      const now = new Date();
+      addMessageToUI(text, 'sent', now);
+      input.value = '';
+      
+      try {
+        console.log('Отправка сообщения в Firebase...', { clientId, text });
+        
+        const msgRef = await db.collection('chatMessages').add({
+          text: text,
+          sender: 'client',
+          clientId: clientId,
+          clientName: clientName || 'Клиент',
+          timestamp: firebase.firestore.Timestamp.fromDate(now),
+          read: false
+        });
+        
+        console.log('Сообщение сохранено, ID:', msgRef.id);
+        
+        await db.collection('chatClients').doc(clientId).set({
+          name: clientName || 'Клиент',
+          lastActive: firebase.firestore.FieldValue.serverTimestamp(),
+          lastMessage: text,
+          hasUnread: true
+        }, { merge: true });
+        
+        console.log('Клиент обновлён в chatClients');
+        
+      } catch (error) {
+        console.error('Ошибка отправки:', error);
+        Swal.fire({ icon: 'error', title: 'Ошибка', text: error.message || 'Не удалось отправить сообщение', toast: true, timer: 5000 });
+      }
+    }
+    
+    function updateCartBadge() {
+      const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      const badge = document.getElementById('navCartBadge');
+      if (badge) {
+        badge.textContent = cart.length;
+        badge.style.display = cart.length > 0 ? 'flex' : 'none';
+      }
+    }
+    
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+<script src="js/bottom-nav.js?v=28"></script>
+</body>
+</html>

@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <script>if(window.parent!==window)document.write('<style>.bottom-nav,#bottomNavBar{display:none!important}body{padding-bottom:0!important}</style>')</script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#667eea">
+  
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-kerben.jpg">
+  <link rel="icon" type="image/jpeg" href="icon-kerben.jpg">
+  
+  <title>Чат с клиентами - Админ</title>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+    
+    /* Шапка */
+    .admin-header {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 15px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    
+    .header-top {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .back-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
+    
+    .back-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    
+    .header-title {
+      flex: 1;
+    }
+    
+    .header-title h1 {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    
+    .header-title p {
+      font-size: 12px;
+      opacity: 0.9;
+      margin-top: 2px;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .action-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .action-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    
+    .action-btn.danger {
+      background: rgba(220,53,69,0.8);
+    }
+    
+    .action-btn.danger:hover {
+      background: rgba(220,53,69,1);
+    }
+    
+    /* Основной контейнер чата */
+    .chat-container {
+      height: calc(100vh - 80px);
+      background: white;
+      position: relative;
+    }
+    
+    /* Список клиентов */
+    .clients-panel {
+      width: 100%;
+      height: 100%;
+      background: white;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .clients-panel.hidden {
+      display: none;
+    }
+    
+    .clients-header {
+      padding: 15px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .clients-header h3 {
+      font-size: 16px;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .clients-count {
+      background: #667eea;
+      color: white;
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    
+    .clients-search {
+      padding: 10px 15px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .clients-search input {
+      width: 100%;
+      padding: 10px 15px;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      font-size: 14px;
+      outline: none;
+    }
+    
+    .clients-search input:focus {
+      border-color: #667eea;
+    }
+    
+    .clients-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+    }
+    
+    .client-card {
+      padding: 12px 15px;
+      margin-bottom: 8px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid transparent;
+    }
+    
+    .client-card:hover {
+      border-color: #667eea;
+      background: #f0f0ff;
+    }
+    
+    .client-card.active {
+      border-color: #667eea;
+      background: #e3f2fd;
+    }
+    
+    .client-card.has-unread {
+      background: #fff9c4;
+    }
+    
+    .client-card.has-unread::before {
+      content: '🔔';
+      float: right;
+    }
+    
+    .client-name {
+      font-weight: 600;
+      color: #333;
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+    
+    .client-meta {
+      font-size: 12px;
+      color: #666;
+    }
+    
+    .client-last-msg {
+      font-size: 12px;
+      color: #888;
+      margin-top: 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .no-clients {
+      text-align: center;
+      color: #999;
+      padding: 40px 20px;
+      font-size: 14px;
+    }
+    
+    /* Панель сообщений */
+    .messages-panel {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      flex-direction: column;
+      background: white;
+      z-index: 10;
+    }
+    
+    .messages-panel.visible {
+      display: flex;
+    }
+    
+    .messages-header {
+      padding: 15px 20px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      display: none;
+      align-items: center;
+    }
+    
+    .messages-header.visible {
+      display: flex;
+    }
+    
+    .messages-header-info {
+      flex: 1;
+    }
+    
+    .messages-header h3 {
+      font-size: 18px;
+      margin-bottom: 3px;
+    }
+    
+    .messages-header p {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+    
+    .messages-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      background: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .messages-placeholder {
+      text-align: center;
+      color: #999;
+      padding: 60px 20px;
+      font-size: 16px;
+    }
+    
+    .messages-placeholder .icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+    
+    /* Сообщения */
+    .message {
+      max-width: 70%;
+      padding: 12px 16px;
+      border-radius: 16px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .message.from-client {
+      background: white;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    
+    .message.from-admin {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    
+    .message-sender {
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      opacity: 0.9;
+    }
+    
+    .message.from-client .message-sender {
+      color: #667eea;
+    }
+    
+    .message-text {
+      font-size: 15px;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+    
+    .message-time {
+      font-size: 11px;
+      margin-top: 5px;
+      opacity: 0.7;
+      text-align: right;
+    }
+    
+    /* Поле ввода */
+    .input-area {
+      padding: 15px 20px;
+      background: white;
+      border-top: 1px solid #e0e0e0;
+      display: none;
+    }
+    
+    .input-area.visible {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .input-area input {
+      flex: 1;
+      padding: 12px 20px;
+      border: 1px solid #ddd;
+      border-radius: 25px;
+      font-size: 15px;
+      outline: none;
+    }
+    
+    .input-area input:focus {
+      border-color: #667eea;
+    }
+    
+    .send-btn {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border: none;
+      border-radius: 50%;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s;
+    }
+    
+    .send-btn:hover {
+      transform: scale(1.05);
+    }
+    
+    .send-btn:active {
+      transform: scale(0.95);
+    }
+    
+    /* Загрузка */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e0e0e0;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Мобильная адаптация */
+    @media (max-width: 768px) {
+      .chat-container {
+        height: calc(100vh - 70px);
+      }
+      
+      .clients-panel {
+        width: 100%;
+        height: 100%;
+      }
+      
+      .header-actions {
+        flex-wrap: wrap;
+      }
+    }
+    
+    /* Кнопка назад всегда видна */
+    .mobile-back-btn {
+      display: inline-flex;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      font-size: 20px;
+      padding: 5px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-right: 12px;
+    }
+    
+    .mobile-back-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+  </style>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+  <!-- Шапка -->
+  <header class="admin-header">
+    <div class="header-top">
+      <a href="profile.html" class="back-btn" title="Назад">←</a>
+      <div class="header-title">
+        <h1>💬 Чат с клиентами <span id="unreadBadge" style="display:none; background:red; color:white; font-size:14px; padding:2px 8px; border-radius:10px; margin-left:8px;">0</span></h1>
+        <p>Панель администратора</p>
+      </div>
+      <div class="header-actions">
+        <button class="action-btn" onclick="refreshClients()">🔄 Обновить</button>
+        <button class="action-btn danger" onclick="clearAllMessages()">🗑️ Очистить всё</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Основной контейнер -->
+  <div class="chat-container">
+    <!-- Список клиентов -->
+    <div class="clients-panel" id="clientsPanel">
+      <div class="clients-header">
+        <h3>📋 Клиенты <span class="clients-count" id="clientsCount">0</span></h3>
+      </div>
+      <div class="clients-search">
+        <input type="text" id="searchClients" placeholder="🔍 Поиск клиента..." oninput="filterClients()">
+      </div>
+      <div class="clients-list" id="clientsList">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          Загрузка клиентов...
+        </div>
+      </div>
+    </div>
+
+    <!-- Панель сообщений -->
+    <div class="messages-panel" id="messagesPanel">
+      <div class="messages-header" id="messagesHeader">
+        <button class="mobile-back-btn" onclick="showClientsList()">←</button>
+        <div class="messages-header-info">
+          <h3 id="chatClientName">Выберите клиента</h3>
+          <p id="chatClientId"></p>
+        </div>
+      </div>
+      <div class="messages-area" id="messagesArea">
+        <div class="messages-placeholder">
+          <div class="icon">👈</div>
+          <div>Выберите клиента из списка слева<br>для начала переписки</div>
+        </div>
+      </div>
+      <div class="input-area" id="inputArea">
+        <input type="text" id="messageInput" placeholder="Введите сообщение..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <button class="send-btn" onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== FIREBASE INIT ====================
+    const firebaseConfig = {
+      apiKey: "AIzaSyBRQ6hH7kXq7ApJmqbvTG1EQsXwxWEnaGg",
+      authDomain: "svoysayet.firebaseapp.com",
+      projectId: "svoysayet",
+      storageBucket: "svoysayet.firebasestorage.app",
+      messagingSenderId: "785840370498",
+      appId: "1:785840370498:web:e08c7cbef96aborc5e81f1"
+    };
+    
+    // Инициализация Firebase
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.firestore();
+    
+    // ==================== ПЕРЕМЕННЫЕ ====================
+    let selectedClientId = null;
+    let selectedClientName = null;
+    let allClients = [];
+    let messagesUnsubscribe = null;
+    
+    // ==================== ИНИЦИАЛИЗАЦИЯ ====================
+    document.addEventListener('DOMContentLoaded', function() {
+      if (checkAdminAccess()) {
+        loadClients();
+      }
+    });
+    
+    // Проверка доступа админа
+    function checkAdminAccess() {
+      // Проверяем customerData (основной способ хранения данных пользователя)
+      const customerData = localStorage.getItem('customerData');
+      const sellerData = localStorage.getItem('sellerData');
+      
+      let isAdmin = false;
+      
+      // Проверяем customerData
+      if (customerData) {
+        try {
+          const customer = JSON.parse(customerData);
+          if (customer.isAdmin === true) {
+            isAdmin = true;
+          }
+        } catch (e) {}
+      }
+      
+      // Проверяем sellerData как запасной вариант
+      if (!isAdmin && sellerData) {
+        try {
+          const seller = JSON.parse(sellerData);
+          if (seller.isAdmin === true || seller.role === 'admin') {
+            isAdmin = true;
+          }
+        } catch (e) {}
+      }
+      
+      if (!isAdmin) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Доступ запрещён',
+          text: 'Эта страница только для администраторов',
+          confirmButtonText: 'На главную'
+        }).then(() => {
+          window.location.href = 'index.html';
+        });
+        return false;
+      }
+      
+      return true;
+    }
+    
+    // ==================== ЗАГРУЗКА КЛИЕНТОВ ====================
+    async function loadClients() {
+      const clientsList = document.getElementById('clientsList');
+      const clientsCount = document.getElementById('clientsCount');
+      
+      clientsList.innerHTML = `
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          Загрузка клиентов...
+        </div>
+      `;
+      
+      try {
+        const snapshot = await db.collection('chatClients').get();
+        
+        allClients = [];
+        snapshot.forEach(doc => {
+          allClients.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+        
+        // Сортируем по lastActive (новые первыми)
+        allClients.sort((a, b) => {
+          const timeA = a.lastActive ? a.lastActive.toDate().getTime() : 0;
+          const timeB = b.lastActive ? b.lastActive.toDate().getTime() : 0;
+          return timeB - timeA;
+        });
+        
+        clientsCount.textContent = allClients.length;
+        renderClients(allClients);
+        
+        // Подписка на новых клиентов
+        subscribeToNewClients();
+        
+        // Подписка на непрочитанные сообщения для badge
+        subscribeToUnreadMessages();
+        
+      } catch (error) {
+        console.error('Ошибка загрузки клиентов:', error);
+        clientsList.innerHTML = `
+          <div class="no-clients">
+            ❌ Ошибка загрузки<br>
+            <button onclick="loadClients()" style="margin-top:10px; padding:8px 16px; border:none; background:#667eea; color:white; border-radius:8px; cursor:pointer;">Повторить</button>
+          </div>
+        `;
+      }
+    }
+    
+    // Отрисовка списка клиентов
+    function renderClients(clients) {
+      const clientsList = document.getElementById('clientsList');
+      
+      if (clients.length === 0) {
+        clientsList.innerHTML = '<div class="no-clients">Нет активных чатов<br>Когда клиенты напишут, они появятся здесь</div>';
+        return;
+      }
+      
+      clientsList.innerHTML = '';
+      
+      clients.forEach(client => {
+        const card = document.createElement('div');
+        card.className = 'client-card' + (client.hasUnread ? ' has-unread' : '') + (client.id === selectedClientId ? ' active' : '');
+        card.onclick = () => selectClient(client);
+        
+        const lastActive = client.lastActive ? formatDate(client.lastActive.toDate()) : 'Давно';
+        
+        card.innerHTML = `
+          <div class="client-name">${escapeHtml(client.name || 'Клиент')}</div>
+          <div class="client-meta">${lastActive}</div>
+          ${client.lastMessage ? `<div class="client-last-msg">${escapeHtml(client.lastMessage)}</div>` : ''}
+        `;
+        
+        clientsList.appendChild(card);
+      });
+    }
+    
+    // Фильтрация клиентов
+    function filterClients() {
+      const query = document.getElementById('searchClients').value.toLowerCase().trim();
+      
+      if (!query) {
+        renderClients(allClients);
+        return;
+      }
+      
+      const filtered = allClients.filter(c => 
+        (c.name && c.name.toLowerCase().includes(query)) ||
+        (c.id && c.id.toLowerCase().includes(query)) ||
+        (c.lastMessage && c.lastMessage.toLowerCase().includes(query))
+      );
+      
+      renderClients(filtered);
+    }
+    
+    // Подписка на новых клиентов
+    function subscribeToNewClients() {
+      db.collection('chatClients').onSnapshot(snapshot => {
+        snapshot.docChanges().forEach(change => {
+          if (change.type === 'added' || change.type === 'modified') {
+            const clientData = { id: change.doc.id, ...change.doc.data() };
+            
+            // Проверяем новое сообщение
+            const existingClient = allClients.find(c => c.id === clientData.id);
+            if (clientData.hasUnread && (!existingClient || !existingClient.hasUnread)) {
+              // Новое сообщение от клиента
+              showNewMessageNotification('Новое сообщение от: ' + (clientData.name || 'Клиент'));
+            }
+            
+            // Обновляем или добавляем в список
+            const existingIndex = allClients.findIndex(c => c.id === clientData.id);
+            if (existingIndex >= 0) {
+              allClients[existingIndex] = clientData;
+            } else {
+              allClients.unshift(clientData);
+            }
+            
+            // Пересортируем
+            allClients.sort((a, b) => {
+              const timeA = a.lastActive ? a.lastActive.toDate().getTime() : 0;
+              const timeB = b.lastActive ? b.lastActive.toDate().getTime() : 0;
+              return timeB - timeA;
+            });
+            
+            document.getElementById('clientsCount').textContent = allClients.length;
+            
+            // Обновляем UI только если не печатаем в поиске
+            if (!document.getElementById('searchClients').value) {
+              renderClients(allClients);
+            }
+          }
+        });
+      });
+    }
+    
+    // Подписка на непрочитанные сообщения для badge
+    function subscribeToUnreadMessages() {
+      db.collection('chatClients')
+        .where('hasUnread', '==', true)
+        .onSnapshot(snapshot => {
+          const unreadCount = snapshot.size;
+          const badge = document.getElementById('unreadBadge');
+          if (badge) {
+            badge.textContent = unreadCount;
+            badge.style.display = unreadCount > 0 ? 'inline' : 'none';
+          }
+          console.log('📬 Клиентов с непрочитанными:', unreadCount);
+        }, error => {
+          console.log('Ошибка подписки на непрочитанные:', error.message);
+        });
+    }
+    
+    // ==================== ВЫБОР КЛИЕНТА ====================
+    async function selectClient(client) {
+      selectedClientId = client.id;
+      selectedClientName = client.name || 'Клиент';
+      
+      // Обновляем UI списка
+      document.querySelectorAll('.client-card').forEach(card => card.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      event.currentTarget.classList.remove('has-unread');
+      
+      // Показываем шапку и поле ввода
+      document.getElementById('messagesHeader').classList.add('visible');
+      document.getElementById('inputArea').classList.add('visible');
+      document.getElementById('chatClientName').textContent = '💬 ' + selectedClientName;
+      document.getElementById('chatClientId').textContent = 'ID: ' + client.id;
+      document.getElementById('messageInput').placeholder = 'Ответить ' + selectedClientName + '...';
+      
+      // Показываем панель сообщений, скрываем список клиентов
+      document.getElementById('clientsPanel').classList.add('hidden');
+      document.getElementById('messagesPanel').classList.add('visible');
+      
+      // Убираем метку непрочитанного
+      try {
+        await db.collection('chatClients').doc(client.id).update({ hasUnread: false });
+      } catch (e) {
+        console.error('Ошибка обновления статуса:', e);
+      }
+      
+      // Загружаем сообщения
+      loadMessages(client.id);
+    }
+    
+    // Показать список клиентов
+    function showClientsList() {
+      document.getElementById('clientsPanel').classList.remove('hidden');
+      document.getElementById('messagesPanel').classList.remove('visible');
+      selectedClientId = null;
+      selectedClientName = null;
+    }
+    
+    // ==================== ЗАГРУЗКА СООБЩЕНИЙ ====================
+    async function loadMessages(clientId) {
+      const messagesArea = document.getElementById('messagesArea');
+      messagesArea.innerHTML = `
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          Загрузка сообщений...
+        </div>
+      `;
+      
+      // Отписка от предыдущей подписки
+      if (messagesUnsubscribe) {
+        messagesUnsubscribe();
+      }
+      
+      try {
+        const snapshot = await db.collection('chatMessages')
+          .where('clientId', '==', clientId)
+          .get();
+        
+        messagesArea.innerHTML = '';
+        
+        if (snapshot.empty) {
+          messagesArea.innerHTML = `
+            <div class="messages-placeholder">
+              <div class="icon">💬</div>
+              <div>Нет сообщений с ${selectedClientName}<br>Начните диалог первым!</div>
+            </div>
+          `;
+        } else {
+          // Собираем и сортируем сообщения
+          const messages = [];
+          snapshot.forEach(doc => {
+            messages.push({ id: doc.id, ...doc.data() });
+          });
+          
+          messages.sort((a, b) => {
+            const timeA = a.timestamp ? a.timestamp.toDate().getTime() : 0;
+            const timeB = b.timestamp ? b.timestamp.toDate().getTime() : 0;
+            return timeA - timeB;
+          });
+          
+          // Отрисовываем сообщения
+          messages.forEach(msg => {
+            addMessageToUI(msg.text, msg.sender, msg.timestamp ? msg.timestamp.toDate() : new Date());
+          });
+          
+          // Прокручиваем вниз
+          messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+        
+        // Подписка на новые сообщения
+        subscribeToMessages(clientId);
+        
+      } catch (error) {
+        console.error('Ошибка загрузки сообщений:', error);
+        messagesArea.innerHTML = `
+          <div class="messages-placeholder">
+            <div class="icon">❌</div>
+            <div>Ошибка загрузки сообщений</div>
+          </div>
+        `;
+      }
+    }
+    
+    // Подписка на новые сообщения
+    function subscribeToMessages(clientId) {
+      messagesUnsubscribe = db.collection('chatMessages')
+        .where('clientId', '==', clientId)
+        .onSnapshot(snapshot => {
+          snapshot.docChanges().forEach(change => {
+            if (change.type === 'added') {
+              const msg = change.doc.data();
+              
+              // Проверяем дубликаты по тексту и времени
+              const messagesArea = document.getElementById('messagesArea');
+              const existingMsgs = messagesArea.querySelectorAll('.message');
+              let isDuplicate = false;
+              
+              existingMsgs.forEach(el => {
+                if (el.dataset.text === msg.text) {
+                  isDuplicate = true;
+                }
+              });
+              
+              if (!isDuplicate && msg.sender === 'client' && selectedClientId === clientId) {
+                addMessageToUI(msg.text, msg.sender, msg.timestamp ? msg.timestamp.toDate() : new Date());
+                messagesArea.scrollTop = messagesArea.scrollHeight;
+                showNewMessageNotification('Новое сообщение от клиента: ' + (msg.clientName || 'Клиент'));
+              }
+            }
+          });
+        });
+    }
+    
+    // Добавление сообщения в UI
+    function addMessageToUI(text, sender, timestamp) {
+      const messagesArea = document.getElementById('messagesArea');
+      
+      // Удаляем placeholder если есть
+      const placeholder = messagesArea.querySelector('.messages-placeholder');
+      if (placeholder) placeholder.remove();
+      
+      const isAdmin = sender === 'admin';
+      const div = document.createElement('div');
+      div.className = 'message ' + (isAdmin ? 'from-admin' : 'from-client');
+      div.dataset.text = text;
+      
+      const time = formatTime(timestamp);
+      const date = formatDateShort(timestamp);
+      
+      div.innerHTML = `
+        <div class="message-sender">${isAdmin ? '✅ Вы' : '👤 ' + selectedClientName}</div>
+        <div class="message-text">${escapeHtml(text)}</div>
+        <div class="message-time">${date} ${time}</div>
+      `;
+      
+      messagesArea.appendChild(div);
+    }
+    
+    // ==================== ОТПРАВКА СООБЩЕНИЯ ====================
+    async function sendMessage() {
+      if (!selectedClientId) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Выберите клиента',
+          text: 'Сначала выберите клиента из списка слева',
+          confirmButtonColor: '#667eea'
+        });
+        return;
+      }
+      
+      const input = document.getElementById('messageInput');
+      const text = input.value.trim();
+      
+      if (!text) return;
+      
+      const now = new Date();
+      
+      // Добавляем в UI сразу
+      addMessageToUI(text, 'admin', now);
+      input.value = '';
+      
+      // Прокручиваем вниз
+      const messagesArea = document.getElementById('messagesArea');
+      messagesArea.scrollTop = messagesArea.scrollHeight;
+      
+      try {
+        // Сохраняем в Firebase
+        await db.collection('chatMessages').add({
+          text: text,
+          sender: 'admin',
+          clientId: selectedClientId,
+          clientName: selectedClientName,
+          timestamp: firebase.firestore.Timestamp.fromDate(now),
+          read: false
+        });
+        
+        console.log('✅ Сообщение отправлено клиенту:', selectedClientName);
+        
+      } catch (error) {
+        console.error('Ошибка отправки:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Ошибка',
+          text: 'Не удалось отправить сообщение',
+          confirmButtonColor: '#667eea'
+        });
+      }
+    }
+    
+    // ==================== ОБНОВЛЕНИЕ ====================
+    function refreshClients() {
+      loadClients();
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Обновлено',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1500
+      });
+    }
+    
+    // ==================== ОЧИСТКА СООБЩЕНИЙ ====================
+    async function clearAllMessages() {
+      const result = await Swal.fire({
+        title: 'Удалить все сообщения?',
+        text: 'Это действие нельзя отменить!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Да, удалить всё',
+        cancelButtonText: 'Отмена',
+        confirmButtonColor: '#dc3545'
+      });
+      
+      if (!result.isConfirmed) return;
+      
+      try {
+        Swal.fire({
+          title: 'Удаление...',
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading()
+        });
+        
+        // Удаляем все сообщения
+        const messagesSnapshot = await db.collection('chatMessages').get();
+        const batch1 = db.batch();
+        messagesSnapshot.forEach(doc => batch1.delete(doc.ref));
+        await batch1.commit();
+        
+        // Удаляем всех клиентов
+        const clientsSnapshot = await db.collection('chatClients').get();
+        const batch2 = db.batch();
+        clientsSnapshot.forEach(doc => batch2.delete(doc.ref));
+        await batch2.commit();
+        
+        // Обновляем UI
+        allClients = [];
+        document.getElementById('clientsCount').textContent = '0';
+        document.getElementById('clientsList').innerHTML = '<div class="no-clients">Нет активных чатов</div>';
+        document.getElementById('messagesArea').innerHTML = `
+          <div class="messages-placeholder">
+            <div class="icon">👈</div>
+            <div>Выберите клиента из списка слева</div>
+          </div>
+        `;
+        document.getElementById('messagesHeader').classList.remove('visible');
+        document.getElementById('inputArea').classList.remove('visible');
+        
+        selectedClientId = null;
+        selectedClientName = null;
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Удалено!',
+          text: 'Все сообщения и клиенты удалены',
+          confirmButtonColor: '#667eea'
+        });
+        
+      } catch (error) {
+        console.error('Ошибка очистки:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Ошибка',
+          text: 'Не удалось очистить сообщения',
+          confirmButtonColor: '#667eea'
+        });
+      }
+    }
+    
+    // ==================== УВЕДОМЛЕНИЯ ====================
+    let originalTitle = document.title;
+    let titleBlinkInterval = null;
+    
+    let audioCtx = null;
+    
+    function showNewMessageNotification(text) {
+      console.log('🔔 Уведомление:', text);
+      
+      // Звук уведомления
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.frequency.value = 600;
+        oscillator.type = 'sine';
+        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        oscillator.start(audioCtx.currentTime);
+        oscillator.stop(audioCtx.currentTime + 0.3);
+      } catch(e) { console.log('Ошибка звука:', e); }
+      
+      // Мигание заголовка (всегда)
+      let isOriginal = true;
+      if (titleBlinkInterval) clearInterval(titleBlinkInterval);
+      titleBlinkInterval = setInterval(() => {
+        document.title = isOriginal ? '💬 ' + text : originalTitle;
+        isOriginal = !isOriginal;
+      }, 1000);
+      
+      window.addEventListener('focus', function stopBlink() {
+        clearInterval(titleBlinkInterval);
+        document.title = originalTitle;
+        window.removeEventListener('focus', stopBlink);
+      }, { once: true });
+      
+      // Браузерное уведомление
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Кербен - Админ Чат', { body: text, icon: 'icon-kerben.jpg' });
+      }
+    }
+    
+    // Запрос разрешения на уведомления
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+    
+    // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    function formatDate(date) {
+      const now = new Date();
+      const diff = now - date;
+      const minutes = Math.floor(diff / 60000);
+      const hours = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / 86400000);
+      
+      if (minutes < 1) return 'Только что';
+      if (minutes < 60) return minutes + ' мин. назад';
+      if (hours < 24) return hours + ' ч. назад';
+      if (days < 7) return days + ' дн. назад';
+      
+      return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    }
+    
+    function formatDateShort(date) {
+      return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+    }
+    
+    function formatTime(date) {
+      return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    }
+  </script>
+<script src="js/bottom-nav.js?v=28"></script>
+</body>
+</html>

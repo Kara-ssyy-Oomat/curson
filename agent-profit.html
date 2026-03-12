@@ -1,0 +1,2200 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <script>if(window.parent!==window)document.write('<style>.bottom-nav,#bottomNavBar{display:none!important}body{padding-bottom:0!important}</style>')</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Моя прибыль - Агент</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .header h1 {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    
+    .header-subtitle {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+    
+    .back-btn {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+    
+    .back-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    /* Авторизация */
+    .auth-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: calc(100vh - 60px);
+      padding: 20px;
+    }
+    
+    .auth-card {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    }
+    
+    .auth-header {
+      background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+      color: white;
+      padding: 25px;
+      text-align: center;
+    }
+    
+    .auth-header h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+    
+    .auth-header p {
+      margin: 8px 0 0;
+      opacity: 0.9;
+      font-size: 14px;
+    }
+    
+    .auth-tabs {
+      display: flex;
+      gap: 10px;
+      padding: 20px 20px 0;
+    }
+    
+    .auth-tab {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+    
+    .auth-tab.active-login {
+      background: #9c27b0;
+      color: white;
+    }
+    
+    .auth-tab.active-register {
+      background: #4caf50;
+      color: white;
+    }
+    
+    .auth-tab.inactive {
+      background: #e0e0e0;
+      color: #333;
+    }
+    
+    .auth-form {
+      padding: 20px;
+    }
+    
+    .auth-input {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+    
+    .auth-input:focus {
+      outline: none;
+      border-color: #9c27b0;
+    }
+    
+    .auth-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 16px;
+      color: white;
+      transition: all 0.3s;
+    }
+    
+    .auth-btn.login {
+      background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+    }
+    
+    .auth-btn.register {
+      background: linear-gradient(135deg, #4caf50, #388e3c);
+    }
+    
+    .auth-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    /* Панель управления */
+    .dashboard {
+      display: none;
+    }
+    
+    .dashboard.active {
+      display: block;
+    }
+    
+    .filters-bar {
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .filters-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: #f5f5f5;
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid #e0e0e0;
+    }
+    
+    .filter-select {
+      padding: 6px 8px;
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      cursor: pointer;
+      color: #333;
+      outline: none;
+    }
+    
+    .filter-divider {
+      color: #ccc;
+      font-size: 16px;
+    }
+    
+    .action-btn {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.3s;
+    }
+    
+    .action-btn.orange { background: #ff9800; color: white; }
+    .action-btn.blue { background: #2196f3; color: white; }
+    
+    .action-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    
+    /* Статистика */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    
+    .stat-card {
+      padding: 12px;
+      border-radius: 12px;
+      color: white;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.2);
+    }
+    
+    .stat-card.purple { background: linear-gradient(135deg, #9c27b0, #7b1fa2); }
+    .stat-card.blue { background: linear-gradient(135deg, #2196f3, #1976d2); }
+    .stat-card.orange { background: linear-gradient(135deg, #ff9800, #f57c00); cursor: pointer; }
+    .stat-card.green { background: linear-gradient(135deg, #4caf50, #388e3c); }
+    .stat-card.pink { background: linear-gradient(135deg, #e91e63, #c2185b); }
+    .stat-card.cyan { background: linear-gradient(135deg, #00bcd4, #0097a7); }
+    
+    .stat-card.orange:hover {
+      transform: scale(1.02);
+    }
+    
+    .stat-label {
+      font-size: 11px;
+      opacity: 0.9;
+      margin-bottom: 4px;
+    }
+    
+    .stat-value {
+      font-size: 22px;
+      font-weight: 700;
+    }
+    
+    /* График */
+    .chart-container {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .chart-title {
+      margin: 0 0 15px;
+      color: #333;
+      font-size: 16px;
+    }
+    
+    .chart-wrapper {
+      height: 200px;
+      position: relative;
+    }
+    
+    /* Список заказов */
+    .orders-container {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .orders-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    
+    .orders-title {
+      margin: 0;
+      color: #333;
+      font-size: 18px;
+    }
+    
+    .orders-count {
+      font-size: 14px;
+      color: #666;
+    }
+    
+    .orders-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .order-card {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 15px;
+      border-left: 4px solid #17a2b8;
+      transition: all 0.3s;
+    }
+    
+    .order-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .order-card.recent {
+      background: #fff8e1;
+      box-shadow: 0 0 10px rgba(255,87,34,0.3);
+    }
+    
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .order-client {
+      flex: 1;
+      min-width: 200px;
+    }
+    
+    .order-client-name {
+      font-weight: 600;
+      color: #333;
+      font-size: 15px;
+    }
+    
+    .order-client-phone {
+      font-size: 13px;
+      color: #666;
+      margin-top: 2px;
+    }
+    
+    .order-client-address {
+      font-size: 12px;
+      color: #888;
+      margin-top: 2px;
+    }
+    
+    .order-meta {
+      text-align: right;
+    }
+    
+    .order-date {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 4px;
+    }
+    
+    .order-status {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      display: inline-block;
+      font-weight: 500;
+      color: white;
+    }
+    
+    .order-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 12px;
+      margin-top: 12px;
+      border-top: 1px solid #e0e0e0;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .order-total {
+      color: #666;
+    }
+    
+    .order-total strong {
+      color: #333;
+      font-size: 15px;
+    }
+    
+    .order-profit {
+      background: #e8f5e9;
+      padding: 6px 14px;
+      border-radius: 8px;
+      color: #388e3c;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    
+    .order-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .order-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+    
+    .order-btn.purple { background: #9c27b0; color: white; }
+    .order-btn.red { background: #dc3545; color: white; }
+    
+    .order-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    
+    .order-items {
+      display: none;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #ccc;
+    }
+    
+    .order-items-title {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    
+    .order-item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 3px 0;
+      color: #555;
+    }
+    
+    /* Нижняя панель */
+    .bottom-bar {
+      background: white;
+      padding: 15px 20px;
+      border-top: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      bottom: 0;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .logout-btn {
+      padding: 12px 24px;
+      background: #f44336;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .close-btn {
+      padding: 12px 32px;
+      background: #9c27b0;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    /* Пустые состояния */
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+    
+    .hidden {
+      display: none !important;
+    }
+    
+    /* Модальное окно клиентов */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .modal-content {
+      background: white;
+      width: 95%;
+      max-width: 500px;
+      max-height: 85vh;
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .modal-header {
+      background: linear-gradient(135deg, #ff9800, #f57c00);
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .modal-close {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: none;
+      font-size: 24px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    
+    .modal-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+    }
+    
+    .client-card {
+      background: #f9f9f9;
+      padding: 12px 15px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      border-left: 4px solid #ff9800;
+    }
+    
+    .client-name {
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .client-phone {
+      font-size: 13px;
+      color: #666;
+      margin-top: 3px;
+    }
+    
+    .client-stats {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      padding-top: 8px;
+      margin-top: 8px;
+      border-top: 1px dashed #ddd;
+    }
+    
+    /* Секция расходов агента */
+    .expenses-section {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    
+    .expenses-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .expenses-title {
+      margin: 0;
+      color: #333;
+      font-size: 18px;
+    }
+    
+    .expenses-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .add-expense-btn {
+      padding: 10px 18px;
+      background: linear-gradient(135deg, #ff9800, #f57c00);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .add-expense-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(255,152,0,0.35);
+    }
+    
+    .expense-period-select {
+      padding: 8px 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      background: white;
+      outline: none;
+    }
+    
+    .expense-period-select:focus {
+      border-color: #ff9800;
+    }
+    
+    .expenses-total-row {
+      background: #fff3e0;
+      padding: 12px 16px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid #ffe0b2;
+    }
+    
+    .expenses-total-label {
+      font-size: 14px;
+      color: #e65100;
+      font-weight: 500;
+    }
+    
+    .expenses-total-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #e65100;
+    }
+    
+    .expenses-note {
+      font-size: 11px;
+      color: #999;
+      text-align: center;
+      margin-bottom: 12px;
+      font-style: italic;
+    }
+    
+    .expense-card {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 10px;
+      border-left: 4px solid #ff9800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+    }
+    
+    .expense-card:hover {
+      background: #fff8e1;
+      transform: translateX(3px);
+    }
+    
+    .expense-info {
+      flex: 1;
+    }
+    
+    .expense-desc {
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    
+    .expense-date-text {
+      font-size: 12px;
+      color: #999;
+    }
+    
+    .expense-amount {
+      font-weight: 700;
+      color: #e65100;
+      font-size: 16px;
+      margin-right: 12px;
+      white-space: nowrap;
+    }
+    
+    .expense-delete-btn {
+      background: #ff5252;
+      color: white;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    
+    .expense-delete-btn:hover {
+      background: #d32f2f;
+      transform: scale(1.1);
+    }
+    
+    .expenses-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    /* Модалка расхода */
+    .expense-modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .expense-modal {
+      background: white;
+      width: 95%;
+      max-width: 420px;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    
+    .expense-modal-header {
+      background: linear-gradient(135deg, #ff9800, #f57c00);
+      color: white;
+      padding: 18px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .expense-modal-header h3 { margin: 0; font-size: 18px; }
+    
+    .expense-modal-close {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: none;
+      font-size: 24px;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    
+    .expense-modal-body { padding: 20px; }
+    
+    .expense-form-group {
+      margin-bottom: 15px;
+    }
+    
+    .expense-form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 6px;
+    }
+    
+    .expense-form-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 15px;
+      transition: border-color 0.3s;
+    }
+    
+    .expense-form-input:focus {
+      outline: none;
+      border-color: #ff9800;
+    }
+    
+    .expense-save-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #ff9800, #f57c00);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 16px;
+      transition: all 0.3s;
+    }
+    
+    .expense-save-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(255,152,0,0.35);
+    }
+
+    @media (max-width: 600px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .stat-value {
+        font-size: 18px;
+      }
+      
+      .header h1 {
+        font-size: 16px;
+      }
+      
+      .order-footer {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .order-actions {
+        justify-content: flex-end;
+      }
+      
+      .expenses-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .expenses-controls {
+        justify-content: space-between;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <a href="index.html" class="back-btn">🏠 На главную</a>
+      <div>
+        <h1>💰 Моя прибыль</h1>
+        <div class="header-subtitle" id="agentName">Агент: ---</div>
+      </div>
+    </div>
+    <button class="back-btn" id="headerLogoutBtn" style="display:none;" onclick="logoutAgent()">🚪 Выйти</button>
+  </div>
+
+  <!-- Форма авторизации -->
+  <div id="authSection" class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h2>🤝 Агентская программа</h2>
+        <p>Получайте 2% от заказов ваших клиентов</p>
+      </div>
+      
+      <div class="auth-tabs">
+        <button class="auth-tab active-login" id="tabLogin" onclick="switchTab('login')">Вход</button>
+        <button class="auth-tab inactive" id="tabRegister" onclick="switchTab('register')">Регистрация</button>
+      </div>
+      
+      <div class="auth-form">
+        <!-- Форма входа -->
+        <div id="loginForm">
+          <input type="tel" id="loginPhone" class="auth-input" placeholder="📱 Ваш телефон">
+          <input type="password" id="loginPassword" class="auth-input" placeholder="🔒 Пароль">
+          <button class="auth-btn login" onclick="loginAgent()">Войти</button>
+        </div>
+        
+        <!-- Форма регистрации -->
+        <div id="registerForm" style="display:none;">
+          <input type="text" id="regName" class="auth-input" placeholder="👤 Ваше имя">
+          <input type="tel" id="regPhone" class="auth-input" placeholder="📱 Ваш телефон">
+          <input type="password" id="regPassword" class="auth-input" placeholder="🔒 Придумайте пароль">
+          <input type="password" id="regPassword2" class="auth-input" placeholder="🔒 Повторите пароль">
+          <button class="auth-btn register" onclick="registerAgent()">Зарегистрироваться</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Панель управления (после входа) -->
+  <div id="dashboard" class="dashboard">
+    <div class="container">
+      <!-- Фильтры -->
+      <div class="filters-bar">
+        <div class="filters-group">
+          <select id="periodFilter" class="filter-select" onchange="filterOrders()">
+            <option value="all">📅 Все время</option>
+            <option value="today">📅 Сегодня</option>
+            <option value="week">📅 Неделя</option>
+            <option value="month" selected>📅 Месяц</option>
+            <option value="year">📅 Год</option>
+          </select>
+          <span class="filter-divider">|</span>
+          <select id="statusFilter" class="filter-select" onchange="filterOrders()">
+            <option value="all">🏷️ Все</option>
+            <option value="Новый">🆕 Новый</option>
+            <option value="В обработке">⏳ В обработке</option>
+            <option value="Доставляется">🚚 Доставляется</option>
+            <option value="Доставлен">✅ Доставлен</option>
+            <option value="Отменён">❌ Отменён</option>
+          </select>
+        </div>
+        
+        <div style="display:flex; gap:8px;">
+          <button class="action-btn orange" onclick="exportReport()">📊 Экспорт</button>
+          <button class="action-btn blue" onclick="loadOrders()">🔄</button>
+        </div>
+      </div>
+      
+      <!-- Статистика -->
+      <div class="stats-grid">
+        <div class="stat-card purple">
+          <div class="stat-label">📦 Заказов</div>
+          <div class="stat-value" id="statOrders">0</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">💵 Сумма</div>
+          <div class="stat-value" id="statSum">0</div>
+        </div>
+        <div class="stat-card orange" onclick="showClients()">
+          <div class="stat-label">👥 Клиентов</div>
+          <div class="stat-value" id="statClients">0</div>
+        </div>
+      </div>
+      
+      <div class="stats-grid" style="margin-bottom:20px;">
+        <div class="stat-card green">
+          <div class="stat-label">💰 Прибыль (2%)</div>
+          <div class="stat-value" id="statProfit">0</div>
+        </div>
+        <div class="stat-card pink">
+          <div class="stat-label">💸 Выплачено</div>
+          <div class="stat-value" id="statPaid">0</div>
+        </div>
+        <div class="stat-card cyan">
+          <div class="stat-label">💎 К получению</div>
+          <div class="stat-value" id="statBalance">0</div>
+        </div>
+      </div>
+      
+      <!-- График -->
+      <div class="chart-container">
+        <h3 class="chart-title">📈 Динамика прибыли</h3>
+        <div class="chart-wrapper">
+          <canvas id="profitChart"></canvas>
+        </div>
+      </div>
+      
+      <!-- Секция расходов агента -->
+      <div class="expenses-section">
+        <div class="expenses-header">
+          <h3 class="expenses-title">📝 Мои расходы (для компании)</h3>
+          <div class="expenses-controls">
+            <select id="agentExpensePeriod" class="expense-period-select" onchange="loadAgentExpenses()">
+              <option value="all">📅 Все время</option>
+              <option value="today">📅 Сегодня</option>
+              <option value="week">📅 Неделя</option>
+              <option value="month" selected>📅 Месяц</option>
+            </select>
+            <button class="add-expense-btn" onclick="openAgentExpenseModal()">➕ Добавить расход</button>
+          </div>
+        </div>
+        
+        <div class="expenses-note">⚠️ Эти расходы записываются для отчёта компании и НЕ вычитаются из вашей прибыли</div>
+        
+        <div class="expenses-total-row">
+          <span class="expenses-total-label">💸 Итого расходов:</span>
+          <span class="expenses-total-value" id="agentExpensesTotal">0 сом</span>
+        </div>
+        
+        <div class="expenses-list" id="agentExpensesList">
+          <div class="empty-state">
+            <div class="empty-icon">📝</div>
+            <div>Расходов пока нет</div>
+            <div style="font-size:13px; color:#999; margin-top:8px;">Записывайте сюда расходы: бензин, обед, связь и т.д.</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Список заказов -->
+      <div class="orders-container">
+        <div class="orders-header">
+          <h3 class="orders-title">📋 Заказы моих клиентов</h3>
+          <span class="orders-count" id="ordersCount">0 заказов</span>
+        </div>
+        <div style="padding:0 0 12px;">
+          <input type="text" id="ordersSearchInput" placeholder="🔍 Поиск по имени, телефону или товару..." oninput="filterOrders()" style="width:100%; padding:10px 14px; border:1px solid #e0e0e0; border-radius:10px; font-size:14px; background:#f8f8f8; box-sizing:border-box; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='#9c27b0'" onblur="this.style.borderColor='#e0e0e0'">
+        </div>
+        <div class="orders-list" id="ordersList">
+          <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <div>Загрузка заказов...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Нижняя панель -->
+    <div class="bottom-bar">
+      <button class="logout-btn" onclick="logoutAgent()">🚪 Выйти из аккаунта</button>
+      <a href="index.html" class="close-btn">✖ На главную</a>
+    </div>
+  </div>
+
+  <!-- Модальное окно добавления расхода агента -->
+  <div class="expense-modal-overlay" id="agentExpenseModal" onclick="if(event.target===this) closeAgentExpenseModal()">
+    <div class="expense-modal">
+      <div class="expense-modal-header">
+        <h3>📝 Новый расход</h3>
+        <button class="expense-modal-close" onclick="closeAgentExpenseModal()">&times;</button>
+      </div>
+      <div class="expense-modal-body">
+        <div class="expense-form-group">
+          <label>📋 За что расход?</label>
+          <input type="text" id="agentExpenseDesc" class="expense-form-input" placeholder="Бензин, обед, связь, доставка...">
+        </div>
+        <div class="expense-form-group">
+          <label>💰 Сумма (сом)</label>
+          <input type="number" id="agentExpenseAmount" class="expense-form-input" placeholder="0" min="0" step="1">
+        </div>
+        <div class="expense-form-group">
+          <label>📅 Дата</label>
+          <input type="date" id="agentExpenseDate" class="expense-form-input">
+        </div>
+        <button class="expense-save-btn" onclick="saveAgentExpense()">✅ Сохранить расход</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно клиентов -->
+  <div class="modal-overlay" id="clientsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="margin:0; font-size:18px;">👥 Мои клиенты</h3>
+        <button class="modal-close" onclick="closeClientsModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="clientsList">
+        <div class="empty-state">Загрузка...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно товаров заказа -->
+  <div id="orderItemsModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:10000; background:#f5f5f5; overflow-y:auto; -webkit-overflow-scrolling:touch;">
+    <div style="width:100%; min-height:100%; background:#f5f5f5; position:relative;">
+      <div id="orderItemsHeader" style="position:sticky; top:0; z-index:10; background:linear-gradient(135deg,#9c27b0,#7b1fa2); color:white; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 10px rgba(0,0,0,0.2);">
+        <div>
+          <div style="font-size:17px; font-weight:700;">📦 Товары заказа</div>
+          <div id="orderItemsClientInfo" style="font-size:12px; opacity:0.9; margin-top:3px;"></div>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button id="orderItemsPdfBtn" onclick="downloadOrderItemsPdf()" style="background:rgba(255,255,255,0.2); border:none; color:white; height:40px; padding:0 14px; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px;">📄 PDF</button>
+          <button onclick="closeOrderItemsModal()" style="background:rgba(255,255,255,0.2); border:none; color:white; width:40px; height:40px; border-radius:50%; font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
+        </div>
+      </div>
+      <div id="orderItemsContent" style="padding:12px; max-width:600px; margin:0 auto;"></div>
+    </div>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  
+  <script>
+    // Firebase конфигурация
+    const firebaseConfig = {
+      apiKey: "AIzaSyBRQ6hH7kXq7ApJmqbvTG1EQsXwxWEnaGg",
+      authDomain: "svoysayet.firebaseapp.com",
+      projectId: "svoysayet",
+      storageBucket: "svoysayet.appspot.com",
+      messagingSenderId: "989465106314",
+      appId: "1:989465106314:web:abc123"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    
+    // Данные
+    let currentAgent = null;
+    let allOrders = [];
+    let filteredOrders = [];
+    let profitChart = null;
+    let ordersListener = null;
+    
+    // Инициализация
+    function init() {
+      loadAgentFromStorage();
+    }
+    
+    // Загрузка агента из localStorage
+    function loadAgentFromStorage() {
+      try {
+        const saved = localStorage.getItem('currentAgent');
+        if (saved) {
+          currentAgent = JSON.parse(saved);
+          showDashboard();
+          startOrdersListener();
+          loadAgentExpenses();
+        }
+      } catch(e) {
+        console.error('Ошибка загрузки агента:', e);
+      }
+    }
+    
+    // Показать панель управления
+    function showDashboard() {
+      document.getElementById('authSection').style.display = 'none';
+      document.getElementById('dashboard').classList.add('active');
+      document.getElementById('agentName').textContent = 'Агент: ' + currentAgent.name;
+      document.getElementById('headerLogoutBtn').style.display = 'block';
+    }
+    
+    // Показать авторизацию
+    function showAuth() {
+      document.getElementById('authSection').style.display = 'flex';
+      document.getElementById('dashboard').classList.remove('active');
+      document.getElementById('headerLogoutBtn').style.display = 'none';
+    }
+    
+    // Переключение вкладок
+    function switchTab(tab) {
+      const tabLogin = document.getElementById('tabLogin');
+      const tabRegister = document.getElementById('tabRegister');
+      const loginForm = document.getElementById('loginForm');
+      const registerForm = document.getElementById('registerForm');
+      
+      if (tab === 'login') {
+        tabLogin.className = 'auth-tab active-login';
+        tabRegister.className = 'auth-tab inactive';
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+      } else {
+        tabLogin.className = 'auth-tab inactive';
+        tabRegister.className = 'auth-tab active-register';
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'block';
+      }
+    }
+    
+    // Регистрация агента
+    async function registerAgent() {
+      const name = document.getElementById('regName').value.trim();
+      const phone = document.getElementById('regPhone').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const password2 = document.getElementById('regPassword2').value;
+      
+      if (!name || !phone || !password) {
+        Swal.fire('Ошибка', 'Заполните все поля', 'warning');
+        return;
+      }
+      
+      if (password !== password2) {
+        Swal.fire('Ошибка', 'Пароли не совпадают', 'warning');
+        return;
+      }
+      
+      if (password.length < 4) {
+        Swal.fire('Ошибка', 'Пароль должен быть минимум 4 символа', 'warning');
+        return;
+      }
+      
+      try {
+        Swal.fire({ title: 'Регистрация...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        // Проверяем уникальность телефона
+        const existing = await db.collection('agents').where('phone', '==', phone).get();
+        if (!existing.empty) {
+          Swal.fire('Ошибка', 'Агент с таким телефоном уже зарегистрирован', 'warning');
+          return;
+        }
+        
+        // Создаём агента
+        const agentRef = await db.collection('agents').add({
+          name: name,
+          phone: phone,
+          password: password,
+          createdAt: Date.now(),
+          active: true
+        });
+        
+        currentAgent = {
+          id: agentRef.id,
+          name: name,
+          phone: phone
+        };
+        
+        localStorage.setItem('currentAgent', JSON.stringify(currentAgent));
+        
+        // Очищаем форму
+        document.getElementById('regName').value = '';
+        document.getElementById('regPhone').value = '';
+        document.getElementById('regPassword').value = '';
+        document.getElementById('regPassword2').value = '';
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Успех!',
+          text: 'Вы зарегистрированы как агент!',
+          timer: 2000,
+          showConfirmButton: false
+        });
+        
+        showDashboard();
+        startOrdersListener();
+        loadAgentExpenses();
+        
+      } catch(e) {
+        console.error('Ошибка регистрации:', e);
+        Swal.fire('Ошибка', 'Не удалось зарегистрироваться', 'error');
+      }
+    }
+    
+    // Вход агента
+    async function loginAgent() {
+      const phone = document.getElementById('loginPhone').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      
+      if (!phone || !password) {
+        Swal.fire('Ошибка', 'Введите телефон и пароль', 'warning');
+        return;
+      }
+      
+      try {
+        Swal.fire({ title: 'Вход...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        const snapshot = await db.collection('agents').where('phone', '==', phone).get();
+        
+        if (snapshot.empty) {
+          Swal.fire('Ошибка', 'Агент не найден', 'warning');
+          return;
+        }
+        
+        const agentDoc = snapshot.docs[0];
+        const agentData = agentDoc.data();
+        
+        if (agentData.password !== password) {
+          Swal.fire('Ошибка', 'Неверный пароль', 'warning');
+          return;
+        }
+        
+        if (agentData.active === false) {
+          Swal.fire('Ошибка', 'Ваш аккаунт заблокирован', 'warning');
+          return;
+        }
+        
+        currentAgent = {
+          id: agentDoc.id,
+          name: agentData.name,
+          phone: agentData.phone
+        };
+        
+        localStorage.setItem('currentAgent', JSON.stringify(currentAgent));
+        
+        // Очищаем форму
+        document.getElementById('loginPhone').value = '';
+        document.getElementById('loginPassword').value = '';
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Добро пожаловать!',
+          text: 'Вы вошли как агент: ' + agentData.name,
+          timer: 2000,
+          showConfirmButton: false
+        });
+        
+        showDashboard();
+        startOrdersListener();
+        loadAgentExpenses();
+        
+      } catch(e) {
+        console.error('Ошибка входа:', e);
+        Swal.fire('Ошибка', 'Не удалось войти', 'error');
+      }
+    }
+    
+    // Выход агента
+    function logoutAgent() {
+      if (ordersListener) {
+        ordersListener();
+        ordersListener = null;
+      }
+      
+      currentAgent = null;
+      allOrders = [];
+      filteredOrders = [];
+      localStorage.removeItem('currentAgent');
+      
+      showAuth();
+      
+      Swal.fire({
+        icon: 'info',
+        title: 'Выход',
+        text: 'Вы вышли из аккаунта агента',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    }
+    
+    // Запуск real-time слушателя заказов
+    function startOrdersListener() {
+      if (!currentAgent) return;
+      
+      if (ordersListener) {
+        ordersListener();
+      }
+      
+      const searchValues = [currentAgent.name];
+      if (currentAgent.id && currentAgent.id !== currentAgent.name) {
+        searchValues.push(currentAgent.id);
+      }
+      
+      ordersListener = db.collection('orders')
+        .where('partner', 'in', searchValues)
+        .limit(500)
+        .onSnapshot(snapshot => {
+          // Проверяем новые заказы
+          const changes = snapshot.docChanges();
+          const newOrders = changes.filter(change => change.type === 'added');
+          
+          if (newOrders.length > 0 && allOrders.length > 0) {
+            newOrders.forEach(change => {
+              const newOrder = change.doc.data();
+              Swal.fire({
+                icon: 'success',
+                title: '🎉 Новый заказ!',
+                html: `
+                  <div style="text-align:left;">
+                    <div><strong>Клиент:</strong> ${newOrder.name || 'Клиент'}</div>
+                    <div><strong>Сумма:</strong> ${(newOrder.total || 0).toLocaleString()} сом</div>
+                    <div style="color:#4caf50; font-weight:bold; margin-top:10px;">
+                      💰 Ваша прибыль: +${Math.round((newOrder.total || 0) * 0.02).toLocaleString()} сом
+                    </div>
+                  </div>
+                `,
+                timer: 5000,
+                timerProgressBar: true
+              });
+            });
+          }
+          
+          allOrders = [];
+          snapshot.forEach(doc => allOrders.push({ id: doc.id, ...doc.data() }));
+          allOrders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+          
+          filterOrders();
+          
+        }, error => {
+          console.error('Ошибка слушателя:', error);
+        });
+    }
+    
+    // Загрузка заказов (перезапуск слушателя)
+    function loadOrders() {
+      startOrdersListener();
+      Swal.fire({ icon: 'success', title: 'Обновлено', timer: 1000, showConfirmButton: false });
+    }
+    
+    // Фильтрация заказов
+    function filterOrders() {
+      const periodFilter = document.getElementById('periodFilter').value;
+      const statusFilter = document.getElementById('statusFilter').value;
+      const searchInput = (document.getElementById('ordersSearchInput')?.value || '').trim().toLowerCase();
+      
+      const now = Date.now();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      filteredOrders = allOrders.filter(order => {
+        const orderTime = order.timestamp || 0;
+        let periodMatch = true;
+        
+        switch(periodFilter) {
+          case 'today':
+            periodMatch = orderTime >= today.getTime();
+            break;
+          case 'week':
+            const weekStart = new Date(today);
+            weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+            periodMatch = orderTime >= weekStart.getTime();
+            break;
+          case 'month':
+            const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+            periodMatch = orderTime >= monthStart.getTime();
+            break;
+          case 'year':
+            const yearStart = new Date(today.getFullYear(), 0, 1);
+            periodMatch = orderTime >= yearStart.getTime();
+            break;
+        }
+        
+        const statusMatch = statusFilter === 'all' || order.status === statusFilter;
+        
+        // Поиск по имени, телефону, товарам
+        let searchMatch = true;
+        if (searchInput) {
+          const name = (order.name || '').toLowerCase();
+          const phone = (order.phone || '').toLowerCase();
+          const items = (order.items || []).map(i => (i.title || '').toLowerCase()).join(' ');
+          searchMatch = name.includes(searchInput) || phone.includes(searchInput) || items.includes(searchInput);
+        }
+        
+        return periodMatch && statusMatch && searchMatch;
+      });
+      
+      filteredOrders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      
+      renderOrders();
+      updateStats();
+      drawChart();
+    }
+    
+    // Отрисовка заказов
+    function renderOrders() {
+      const listEl = document.getElementById('ordersList');
+      
+      if (allOrders.length === 0) {
+        listEl.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <div>Пока нет заказов от ваших клиентов</div>
+            <div style="font-size:14px; color:#999; margin-top:10px;">Поделитесь своей ссылкой, чтобы привлечь клиентов!</div>
+          </div>
+        `;
+        document.getElementById('ordersCount').textContent = '0 заказов';
+        return;
+      }
+      
+      if (filteredOrders.length === 0) {
+        listEl.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🔍</div>
+            <div>Заказов по фильтрам не найдено</div>
+          </div>
+        `;
+        document.getElementById('ordersCount').textContent = '0 заказов';
+        return;
+      }
+      
+      const count = filteredOrders.length;
+      document.getElementById('ordersCount').textContent = `${count} ${count === 1 ? 'заказ' : count < 5 ? 'заказа' : 'заказов'}`;
+      
+      const now = Date.now();
+      const oneDayAgo = now - 24 * 60 * 60 * 1000;
+      
+      const statusColors = {
+        'Новый': '#17a2b8',
+        'В обработке': '#ffc107',
+        'Доставляется': '#007bff',
+        'Доставлен': '#28a745',
+        'Отменён': '#dc3545'
+      };
+      
+      listEl.innerHTML = filteredOrders.map(order => {
+        const profit = Math.round((order.total || 0) * 0.02);
+        const date = order.time || new Date(order.timestamp).toLocaleString();
+        const statusColor = statusColors[order.status] || '#666';
+        const isRecent = (order.timestamp || 0) > oneDayAgo;
+        
+        const itemsCount = order.items ? order.items.length : 0;
+        const totalQty = order.items ? order.items.reduce((s, i) => s + (i.qty || 0), 0) : 0;
+        
+        return `
+          <div class="order-card ${isRecent ? 'recent' : ''}" style="border-left-color:${statusColor};">
+            <div class="order-header">
+              <div class="order-client">
+                <div class="order-client-name">
+                  ${order.name || 'Клиент'}
+                  ${isRecent ? '<span style="background:#ff5722; color:white; padding:2px 6px; border-radius:4px; font-size:10px; margin-left:8px;">🆕 НОВЫЙ</span>' : ''}
+                </div>
+                <div class="order-client-phone">📱 ${order.phone || ''}</div>
+                <div class="order-client-address">📍 ${order.address || ''}</div>
+              </div>
+              <div class="order-meta">
+                <div class="order-date">${date}</div>
+                <div class="order-status" style="background:${statusColor};">${order.status || 'Новый'}</div>
+              </div>
+            </div>
+            <div class="order-footer">
+              <div class="order-total">
+                Сумма: <strong>${(order.total || 0).toLocaleString()} сом</strong>
+              </div>
+              <div class="order-actions">
+                ${itemsCount > 0 ? `<button class="order-btn purple" onclick="openOrderItemsModal('${order.id}')">📦 Товары (${totalQty} шт)</button>` : ''}
+                <div class="order-profit">+${profit.toLocaleString()} сом</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // Открыть модальное окно товаров заказа
+    async function openOrderItemsModal(orderId) {
+      const order = allOrders.find(o => o.id === orderId);
+      if (!order || !order.items || order.items.length === 0) return;
+      
+      const modal = document.getElementById('orderItemsModal');
+      const content = document.getElementById('orderItemsContent');
+      const clientInfo = document.getElementById('orderItemsClientInfo');
+      
+      clientInfo.textContent = (order.name || 'Клиент') + ' • ' + (order.phone || '');
+      
+      _currentOrderItemsId = orderId;
+      
+      // Показываем модалку сразу с загрузкой
+      content.innerHTML = '<div style="text-align:center; padding:40px; color:#888;">⏳ Загрузка товаров...</div>';
+      modal.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+      
+      // Подгружаем фото из коллекции products для товаров без image
+      const itemsMissingImage = order.items.filter(function(item) { return !item.image; });
+      const imageMap = {};
+      
+      if (itemsMissingImage.length > 0) {
+        const productIds = itemsMissingImage.map(function(item) { return item.id; }).filter(Boolean);
+        // Firestore 'in' запрос поддерживает до 10 элементов, разбиваем на чанки
+        for (let i = 0; i < productIds.length; i += 10) {
+          const chunk = productIds.slice(i, i + 10);
+          try {
+            const snap = await db.collection('products').where(firebase.firestore.FieldPath.documentId(), 'in', chunk).get();
+            snap.forEach(function(doc) {
+              const d = doc.data();
+              if (d.imageUrl) imageMap[doc.id] = d.imageUrl;
+              else if (d.image) imageMap[doc.id] = d.image;
+              else if (d.images && d.images.length > 0) imageMap[doc.id] = d.images[0];
+            });
+          } catch (e) {
+            console.warn('Ошибка загрузки фото товаров:', e);
+          }
+        }
+      }
+      
+      const totalQty = order.items.reduce(function(s, i) { return s + (i.qty || 0); }, 0);
+      const totalSum = order.items.reduce(function(s, i) { return s + ((i.price || 0) * (i.qty || 0)); }, 0);
+      
+      let html = '<div style="background:white; border-radius:12px; padding:14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 1px 4px rgba(0,0,0,0.06);">' +
+        '<div>' +
+          '<div style="font-size:13px; color:#888;">Товаров: <strong style="color:#333;">' + order.items.length + '</strong></div>' +
+          '<div style="font-size:13px; color:#888; margin-top:2px;">Общее кол-во: <strong style="color:#333;">' + totalQty + ' шт</strong></div>' +
+        '</div>' +
+        '<div style="text-align:right;">' +
+          '<div style="font-size:18px; font-weight:700; color:#9c27b0;">' + totalSum.toLocaleString() + ' сом</div>' +
+          '<div style="font-size:12px; color:#4caf50; font-weight:600;">+' + Math.round(totalSum * 0.02).toLocaleString() + ' прибыль</div>' +
+        '</div>' +
+      '</div>';
+      
+      order.items.forEach(function(item) {
+        const itemTotal = (item.price || 0) * (item.qty || 0);
+        const imgSrc = item.image || (item.id && imageMap[item.id]) || '';
+        html += '<div style="background:white; border-radius:12px; margin-bottom:10px; overflow:hidden; box-shadow:0 1px 6px rgba(0,0,0,0.07);">' +
+          '<div style="display:flex; gap:12px; padding:12px;">' +
+            '<div style="flex-shrink:0; width:80px; height:80px; border-radius:10px; overflow:hidden; background:#f0f0f0; display:flex; align-items:center; justify-content:center;">' +
+              (imgSrc ? '<img src="' + imgSrc + '" referrerpolicy="no-referrer" style="width:100%; height:100%; object-fit:cover;" onerror="this.parentElement.innerHTML=\'📦\'">' : '<div style="font-size:32px;">📦</div>') +
+            '</div>' +
+            '<div style="flex:1; min-width:0;">' +
+              '<div style="font-size:14px; font-weight:600; color:#333; margin-bottom:6px; word-break:break-word;">' + (item.title || 'Товар') + '</div>' +
+              '<div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px;">' +
+                '<span style="background:#e3f2fd; color:#1565c0; padding:3px 8px; border-radius:6px; font-size:12px; font-weight:600;">' + (item.price || 0).toLocaleString() + ' сом/шт</span>' +
+                '<span style="background:#f3e5f5; color:#7b1fa2; padding:3px 8px; border-radius:6px; font-size:12px; font-weight:600;">× ' + (item.qty || 0) + '</span>' +
+              '</div>' +
+              '<div style="font-size:15px; font-weight:700; color:#333;">' + itemTotal.toLocaleString() + ' сом</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      });
+      
+      content.innerHTML = html;
+    }
+    
+    // Текущий orderId для PDF
+    let _currentOrderItemsId = null;
+    
+    function closeOrderItemsModal() {
+      document.getElementById('orderItemsModal').style.display = 'none';
+      document.body.style.overflow = '';
+      _currentOrderItemsId = null;
+    }
+    
+    // Скачать PDF со списком товаров заказа
+    async function downloadOrderItemsPdf() {
+      const order = allOrders.find(o => o.id === _currentOrderItemsId);
+      if (!order || !order.items || order.items.length === 0) return;
+      
+      const btn = document.getElementById('orderItemsPdfBtn');
+      const origText = btn.innerHTML;
+      btn.innerHTML = '⏳';
+      btn.disabled = true;
+      
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const scale = 1.5;
+        let yPos = 5;
+        
+        const clientName = order.name || 'Клиент';
+        const clientPhone = order.phone || '';
+        const orderDate = order.createdAt ? (order.createdAt.toDate ? order.createdAt.toDate() : new Date(order.createdAt)).toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+        const totalQty = order.items.reduce(function(s, i) { return s + (i.qty || 0); }, 0);
+        const totalSum = order.items.reduce(function(s, i) { return s + ((i.price || 0) * (i.qty || 0)); }, 0);
+        
+        // === ЗАГОЛОВОК ===
+        const hdrC = document.createElement('canvas');
+        const hdrX = hdrC.getContext('2d');
+        hdrC.width = 600 * scale; hdrC.height = 80 * scale;
+        hdrX.scale(scale, scale);
+        hdrX.fillStyle = '#9c27b0';
+        hdrX.fillRect(0, 0, 600, 80);
+        hdrX.fillStyle = 'white';
+        hdrX.font = 'bold 26px Arial';
+        hdrX.textAlign = 'center';
+        hdrX.fillText('ЗАКАЗ', 300, 30);
+        hdrX.font = '15px Arial';
+        hdrX.fillText(clientName + '  •  ' + clientPhone, 300, 52);
+        hdrX.font = '13px Arial';
+        hdrX.fillText(orderDate, 300, 72);
+        doc.addImage(hdrC.toDataURL('image/png'), 'PNG', 10, yPos, 190, 22);
+        yPos += 25;
+        
+        // === СТАТИСТИКА ===
+        const stC = document.createElement('canvas');
+        const stX = stC.getContext('2d');
+        stC.width = 600 * scale; stC.height = 40 * scale;
+        stX.scale(scale, scale);
+        stX.fillStyle = '#f3e5f5';
+        stX.fillRect(0, 0, 600, 40);
+        stX.strokeStyle = '#9c27b0';
+        stX.lineWidth = 2;
+        stX.strokeRect(0, 0, 600, 40);
+        stX.fillStyle = '#7b1fa2';
+        stX.font = 'bold 14px Arial';
+        stX.textAlign = 'center';
+        stX.fillText('Товаров: ' + order.items.length + '  |  Кол-во: ' + totalQty + ' шт  |  Сумма: ' + totalSum.toLocaleString() + ' сом', 300, 26);
+        doc.addImage(stC.toDataURL('image/png'), 'PNG', 10, yPos, 190, 11);
+        yPos += 14;
+        
+        // === ЗАГОЛОВОК ТАБЛИЦЫ ===
+        const thC = document.createElement('canvas');
+        const thX = thC.getContext('2d');
+        thC.width = 600 * scale; thC.height = 35 * scale;
+        thX.scale(scale, scale);
+        thX.fillStyle = '#e0e0e0';
+        thX.fillRect(0, 0, 600, 35);
+        thX.strokeStyle = '#333';
+        thX.lineWidth = 2;
+        thX.strokeRect(0, 0, 600, 35);
+        thX.beginPath();
+        thX.moveTo(40, 0); thX.lineTo(40, 35);
+        thX.moveTo(310, 0); thX.lineTo(310, 35);
+        thX.moveTo(390, 0); thX.lineTo(390, 35);
+        thX.moveTo(490, 0); thX.lineTo(490, 35);
+        thX.stroke();
+        thX.fillStyle = '#333';
+        thX.font = 'bold 12px Arial';
+        thX.textAlign = 'center';
+        thX.fillText('№', 20, 23);
+        thX.fillText('НАЗВАНИЕ', 175, 23);
+        thX.fillText('КОЛ-ВО', 350, 23);
+        thX.fillText('ЦЕНА', 440, 23);
+        thX.fillText('СУММА', 550, 23);
+        doc.addImage(thC.toDataURL('image/png'), 'PNG', 10, yPos, 190, 10);
+        yPos += 10;
+        
+        // === СТРОКИ ТОВАРОВ ===
+        for (let i = 0; i < order.items.length; i++) {
+          if (yPos > 265) { doc.addPage(); yPos = 10; }
+          
+          const item = order.items[i];
+          const itemTotal = (item.price || 0) * (item.qty || 0);
+          const title = item.title || 'Товар';
+          
+          const rC = document.createElement('canvas');
+          const rX = rC.getContext('2d');
+          rC.width = 600 * scale; rC.height = 35 * scale;
+          rX.scale(scale, scale);
+          rX.fillStyle = i % 2 === 0 ? 'white' : '#faf4fc';
+          rX.fillRect(0, 0, 600, 35);
+          rX.strokeStyle = '#ccc';
+          rX.lineWidth = 1;
+          rX.strokeRect(0, 0, 600, 35);
+          rX.beginPath();
+          rX.moveTo(40, 0); rX.lineTo(40, 35);
+          rX.moveTo(310, 0); rX.lineTo(310, 35);
+          rX.moveTo(390, 0); rX.lineTo(390, 35);
+          rX.moveTo(490, 0); rX.lineTo(490, 35);
+          rX.stroke();
+          
+          rX.fillStyle = '#333';
+          rX.font = '11px Arial';
+          rX.textAlign = 'center';
+          rX.fillText(String(i + 1), 20, 22);
+          
+          rX.textAlign = 'left';
+          if (title.length > 35) {
+            rX.fillText(title.substring(0, 35), 48, 15);
+            rX.fillText(title.substring(35, 70), 48, 28);
+          } else {
+            rX.fillText(title, 48, 22);
+          }
+          
+          rX.textAlign = 'center';
+          rX.font = 'bold 12px Arial';
+          rX.fillText((item.qty || 0) + ' шт', 350, 22);
+          rX.font = '11px Arial';
+          rX.fillText((item.price || 0).toLocaleString() + ' сом', 440, 22);
+          rX.font = 'bold 11px Arial';
+          rX.fillText(itemTotal.toLocaleString() + ' сом', 550, 22);
+          
+          doc.addImage(rC.toDataURL('image/png'), 'PNG', 10, yPos, 190, 9);
+          yPos += 9;
+        }
+        
+        // === ИТОГО ===
+        if (yPos > 265) { doc.addPage(); yPos = 10; }
+        const tC = document.createElement('canvas');
+        const tX = tC.getContext('2d');
+        tC.width = 600 * scale; tC.height = 50 * scale;
+        tX.scale(scale, scale);
+        tX.fillStyle = '#ffeb3b';
+        tX.fillRect(0, 0, 600, 50);
+        tX.strokeStyle = '#333';
+        tX.lineWidth = 3;
+        tX.strokeRect(0, 0, 600, 50);
+        tX.fillStyle = '#333';
+        tX.font = 'bold 22px Arial';
+        tX.textAlign = 'right';
+        tX.fillText('ИТОГО:  ' + totalSum.toLocaleString() + ' сом', 580, 33);
+        doc.addImage(tC.toDataURL('image/png'), 'PNG', 10, yPos, 190, 14);
+        
+        // Скачиваем PDF
+        const fileName = 'Заказ_' + clientName.replace(/\s+/g, '_') + '_' + (order.createdAt ? new Date(order.createdAt.toDate ? order.createdAt.toDate() : order.createdAt).toLocaleDateString('ru-RU').replace(/\./g, '-') : 'без_даты') + '.pdf';
+        doc.save(fileName);
+        
+      } catch (err) {
+        console.error('Ошибка создания PDF:', err);
+        Swal.fire('Ошибка', 'Не удалось создать PDF', 'error');
+      } finally {
+        btn.innerHTML = origText;
+        btn.disabled = false;
+      }
+    }
+    
+    // Обновление статистики
+    async function updateStats() {
+      let totalSum = 0;
+      let totalOrders = filteredOrders.length;
+      const uniqueClients = new Set();
+      
+      filteredOrders.forEach(order => {
+        totalSum += order.total || 0;
+        if (order.phone) uniqueClients.add(order.phone);
+      });
+      
+      const totalProfit = Math.round(totalSum * 0.02);
+      
+      // Загружаем выплаты
+      let totalPaid = 0;
+      if (currentAgent && currentAgent.id) {
+        try {
+          const payoutsSnapshot = await db.collection('agentPayouts')
+            .where('agentId', '==', currentAgent.id)
+            .get();
+          
+          payoutsSnapshot.forEach(doc => {
+            totalPaid += doc.data().amount || 0;
+          });
+        } catch(e) {
+          console.log('Не удалось загрузить выплаты:', e);
+        }
+      }
+      
+      const balance = totalProfit - totalPaid;
+      
+      document.getElementById('statOrders').textContent = totalOrders;
+      document.getElementById('statSum').textContent = totalSum.toLocaleString();
+      document.getElementById('statClients').textContent = uniqueClients.size;
+      document.getElementById('statProfit').textContent = totalProfit.toLocaleString();
+      document.getElementById('statPaid').textContent = totalPaid.toLocaleString();
+      document.getElementById('statBalance').textContent = balance.toLocaleString();
+    }
+    
+    // Рисование графика
+    function drawChart() {
+      const canvas = document.getElementById('profitChart');
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      
+      // Группируем по дням
+      const dailyData = {};
+      filteredOrders.forEach(order => {
+        const timestamp = order.timestamp || order.createdAt || order.date;
+        if (!timestamp) return;
+        
+        const date = new Date(timestamp);
+        if (isNaN(date.getTime())) return;
+        
+        const dateKey = date.toISOString().split('T')[0];
+        if (!dailyData[dateKey]) {
+          dailyData[dateKey] = 0;
+        }
+        dailyData[dateKey] += Math.round((order.total || 0) * 0.02);
+      });
+      
+      const sortedDates = Object.keys(dailyData).sort();
+      
+      if (sortedDates.length === 0) {
+        if (profitChart) {
+          profitChart.destroy();
+          profitChart = null;
+        }
+        document.getElementById('profitChart').parentElement.innerHTML = `
+          <h3 class="chart-title">📈 Динамика прибыли</h3>
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:150px; color:#999;">
+            <div style="font-size:40px; margin-bottom:10px;">📊</div>
+            <div style="font-size:14px;">Нет данных для отображения</div>
+          </div>
+        `;
+        return;
+      }
+      
+      const labels = sortedDates.map(d => {
+        const date = new Date(d);
+        return date.getDate() + '.' + (date.getMonth() + 1);
+      });
+      const data = sortedDates.map(d => dailyData[d]);
+      
+      if (profitChart) {
+        profitChart.destroy();
+      }
+      
+      profitChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Прибыль (сом)',
+            data: data,
+            borderColor: '#9c27b0',
+            backgroundColor: 'rgba(156, 39, 176, 0.1)',
+            tension: 0.3,
+            fill: true,
+            pointRadius: 4,
+            pointBackgroundColor: '#9c27b0'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return value + ' сом';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Показать клиентов
+    function showClients() {
+      const modal = document.getElementById('clientsModal');
+      const listEl = document.getElementById('clientsList');
+      
+      modal.style.display = 'flex';
+      
+      // Собираем уникальных клиентов
+      const clientsMap = new Map();
+      
+      filteredOrders.forEach(order => {
+        const phone = order.phone;
+        if (phone) {
+          if (!clientsMap.has(phone)) {
+            clientsMap.set(phone, {
+              name: order.name || 'Без имени',
+              phone: phone,
+              ordersCount: 1,
+              totalSum: order.total || 0
+            });
+          } else {
+            const client = clientsMap.get(phone);
+            client.ordersCount++;
+            client.totalSum += order.total || 0;
+          }
+        }
+      });
+      
+      const clients = Array.from(clientsMap.values()).sort((a, b) => b.ordersCount - a.ordersCount);
+      
+      if (clients.length === 0) {
+        listEl.innerHTML = '<div class="empty-state">Нет клиентов</div>';
+        return;
+      }
+      
+      listEl.innerHTML = clients.map(client => {
+        const profit = Math.round(client.totalSum * 0.02);
+        return `
+          <div class="client-card">
+            <div class="client-name">👤 ${client.name}</div>
+            <div class="client-phone">📞 <a href="tel:${client.phone}" style="color:#2196f3; text-decoration:none;">${client.phone}</a></div>
+            <div class="client-stats">
+              <span>📦 ${client.ordersCount} ${client.ordersCount === 1 ? 'заказ' : client.ordersCount < 5 ? 'заказа' : 'заказов'}</span>
+              <span>💵 ${client.totalSum.toLocaleString()} сом</span>
+              <span style="color:#4caf50; font-weight:600;">💰 ${profit.toLocaleString()} сом</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // Закрыть модальное окно клиентов
+    function closeClientsModal() {
+      document.getElementById('clientsModal').style.display = 'none';
+    }
+    
+    // Экспорт отчёта
+    function exportReport() {
+      if (!currentAgent || filteredOrders.length === 0) {
+        Swal.fire('Нет данных', 'Нет заказов для экспорта', 'info');
+        return;
+      }
+      
+      let csv = 'Дата,Клиент,Телефон,Адрес,Статус,Сумма,Прибыль\n';
+      
+      filteredOrders.forEach(order => {
+        const date = order.time || new Date(order.timestamp).toLocaleString();
+        const name = (order.name || 'Клиент').replace(/,/g, ' ');
+        const phone = order.phone || '';
+        const address = (order.address || '').replace(/,/g, ' ');
+        const status = order.status || 'Новый';
+        const total = order.total || 0;
+        const profit = Math.round(total * 0.02);
+        
+        csv += `"${date}","${name}","${phone}","${address}","${status}",${total},${profit}\n`;
+      });
+      
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `agent_report_${currentAgent.name}_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Экспортировано!',
+        text: `Отчёт сохранён: ${filteredOrders.length} заказов`,
+        timer: 2000,
+        showConfirmButton: false
+      });
+    }
+    
+    // Закрытие модалки по клику вне её
+    document.getElementById('clientsModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeClientsModal();
+      }
+    });
+    
+    // ==================== РАСХОДЫ АГЕНТА (для компании) ====================
+    
+    // Открыть модалку
+    function openAgentExpenseModal() {
+      document.getElementById('agentExpenseModal').style.display = 'flex';
+      document.getElementById('agentExpenseDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('agentExpenseDesc').value = '';
+      document.getElementById('agentExpenseAmount').value = '';
+      setTimeout(() => document.getElementById('agentExpenseDesc').focus(), 200);
+    }
+    
+    // Закрыть модалку
+    function closeAgentExpenseModal() {
+      document.getElementById('agentExpenseModal').style.display = 'none';
+    }
+    
+    // Сохранить расход
+    async function saveAgentExpense() {
+      if (!currentAgent) return;
+      
+      const description = document.getElementById('agentExpenseDesc').value.trim();
+      const amount = parseFloat(document.getElementById('agentExpenseAmount').value);
+      const date = document.getElementById('agentExpenseDate').value;
+      
+      if (!description) {
+        Swal.fire('Ошибка', 'Укажите за что расход', 'warning');
+        return;
+      }
+      if (!amount || amount <= 0) {
+        Swal.fire('Ошибка', 'Укажите корректную сумму', 'warning');
+        return;
+      }
+      if (!date) {
+        Swal.fire('Ошибка', 'Выберите дату', 'warning');
+        return;
+      }
+      
+      try {
+        Swal.fire({ title: 'Сохранение...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        await db.collection('agentExpenses').add({
+          agentId: currentAgent.id,
+          agentName: currentAgent.name,
+          description: description,
+          amount: amount,
+          date: date,
+          timestamp: new Date(date).getTime(),
+          createdAt: Date.now()
+        });
+        
+        closeAgentExpenseModal();
+        Swal.fire({
+          icon: 'success',
+          title: 'Записано!',
+          text: `Расход "${description}" — ${amount.toLocaleString()} сом`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+        
+        loadAgentExpenses();
+      } catch(e) {
+        console.error('Ошибка сохранения расхода:', e);
+        Swal.fire('Ошибка', 'Не удалось сохранить расход', 'error');
+      }
+    }
+    
+    // Загрузить расходы агента
+    async function loadAgentExpenses() {
+      if (!currentAgent) return;
+      
+      try {
+        const snapshot = await db.collection('agentExpenses')
+          .where('agentId', '==', currentAgent.id)
+          .get();
+        
+        let expenses = [];
+        snapshot.forEach(doc => expenses.push({ id: doc.id, ...doc.data() }));
+        
+        // Сортируем на клиенте (без orderBy в запросе не нужен составной индекс)
+        expenses.sort((a, b) => (b.timestamp || b.createdAt || 0) - (a.timestamp || a.createdAt || 0));
+        
+        // Фильтр по периоду
+        const period = document.getElementById('agentExpensePeriod').value;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayStart = today.getTime();
+        
+        expenses = expenses.filter(exp => {
+          const t = exp.timestamp || exp.createdAt || 0;
+          switch(period) {
+            case 'today': return t >= todayStart;
+            case 'week':
+              const ws = new Date(today); ws.setDate(ws.getDate() - ws.getDay());
+              return t >= ws.getTime();
+            case 'month':
+              return t >= new Date(today.getFullYear(), today.getMonth(), 1).getTime();
+            case 'all': return true;
+            default: return true;
+          }
+        });
+        
+        const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+        document.getElementById('agentExpensesTotal').textContent = totalExpenses.toLocaleString() + ' сом';
+        
+        const listEl = document.getElementById('agentExpensesList');
+        
+        if (expenses.length === 0) {
+          listEl.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">📝</div>
+              <div>Расходов за этот период нет</div>
+              <div style="font-size:13px; color:#999; margin-top:8px;">Записывайте сюда расходы: бензин, обед, связь и т.д.</div>
+            </div>
+          `;
+          return;
+        }
+        
+        listEl.innerHTML = expenses.map(exp => {
+          const d = new Date(exp.timestamp || exp.createdAt);
+          const dateStr = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+          return `
+            <div class="expense-card">
+              <div class="expense-info">
+                <div class="expense-desc">${exp.description}</div>
+                <div class="expense-date-text">📅 ${dateStr}</div>
+              </div>
+              <div class="expense-amount">${exp.amount.toLocaleString()} сом</div>
+              <button class="expense-delete-btn" onclick="deleteAgentExpense('${exp.id}')" title="Удалить">🗑️</button>
+            </div>
+          `;
+        }).join('');
+        
+      } catch(e) {
+        console.error('Ошибка загрузки расходов агента:', e);
+        // Если коллекция не существует, просто показываем пустой список
+        const listEl = document.getElementById('agentExpensesList');
+        if (listEl) {
+          listEl.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">📝</div>
+              <div>Расходов пока нет</div>
+            </div>
+          `;
+        }
+      }
+    }
+    
+    // Удалить расход
+    async function deleteAgentExpense(id) {
+      const result = await Swal.fire({
+        title: 'Удалить расход?',
+        text: 'Это действие нельзя отменить',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Да, удалить',
+        cancelButtonText: 'Отмена',
+        confirmButtonColor: '#dc3545'
+      });
+      
+      if (result.isConfirmed) {
+        try {
+          await db.collection('agentExpenses').doc(id).delete();
+          Swal.fire({ icon: 'success', title: 'Удалено!', timer: 1500, showConfirmButton: false });
+          loadAgentExpenses();
+        } catch(e) {
+          console.error('Ошибка удаления:', e);
+          Swal.fire('Ошибка', 'Не удалось удалить', 'error');
+        }
+      }
+    }
+    
+    // ==================== КОНЕЦ РАСХОДОВ АГЕНТА ====================
+    
+    // Запуск
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+<script src="js/bottom-nav.js?v=28"></script>
+</body>
+</html>

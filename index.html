@@ -1,728 +1,661 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 
-<html lang="ru">
+<html lang="ru" style="overflow-y: scroll !important; touch-action: pan-y !important;">
 
 <head>
-
+  <script>
+    // Если index.html загружен внутри iframe - выйти из iframe
+    if (window.parent !== window) {
+      window.parent.postMessage('closeIframe', '*');
+      window.stop(); // Остановить загрузку
+    }
+  </script>
   <meta charset="UTF-8" />
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js">
-
-// Обновить название товара
-async function updateProductTitle(productId, newTitle) {
-  try {
-    await db.collection('products').doc(productId).update({ title: newTitle });
-    Swal.fire('Успех!', 'Название обновлено', 'success');
-    loadProducts();
-  } catch (error) {
-    console.error('Ошибка при обновлении названия:', error);
-    Swal.fire('Ошибка', 'Не удалось обновить название', 'error');
-  }
-}
-
-// Заблокировать/разблокировать товар
-async function toggleProductBlock(productId, currentStatus) {
-  try {
-    await db.collection('products').doc(productId).update({ blocked: !currentStatus });
-    Swal.fire('Успех!', !currentStatus ? 'Товар заблокирован' : 'Товар разблокирован', 'success');
-    loadProducts();
-  } catch (error) {
-    console.error('Ошибка при смене статуса блокировки:', error);
-    Swal.fire('Ошибка', 'Не удалось изменить статус блокировки', 'error');
-  }
-}
-
-</script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js">
-
-// Обновить название товара
-async function updateProductTitle(productId, newTitle) {
-  try {
-    await db.collection('products').doc(productId).update({ title: newTitle });
-    Swal.fire('Успех!', 'Название обновлено', 'success');
-    loadProducts();
-  } catch (error) {
-    console.error('Ошибка при обновлении названия:', error);
-    Swal.fire('Ошибка', 'Не удалось обновить название', 'error');
-  }
-}
-
-// Заблокировать/разблокировать товар
-async function toggleProductBlock(productId, currentStatus) {
-  try {
-    await db.collection('products').doc(productId).update({ blocked: !currentStatus });
-    Swal.fire('Успех!', !currentStatus ? 'Товар заблокирован' : 'Товар разблокирован', 'success');
-    loadProducts();
-  } catch (error) {
-    console.error('Ошибка при смене статуса блокировки:', error);
-    Swal.fire('Ошибка', 'Не удалось изменить статус блокировки', 'error');
-  }
-}
-
-</script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js">
-
-// Обновить название товара
-async function updateProductTitle(productId, newTitle) {
-  try {
-    await db.collection('products').doc(productId).update({ title: newTitle });
-    Swal.fire('Успех!', 'Название обновлено', 'success');
-    loadProducts();
-  } catch (error) {
-    console.error('Ошибка при обновлении названия:', error);
-    Swal.fire('Ошибка', 'Не удалось обновить название', 'error');
-  }
-}
-
-// Заблокировать/разблокировать товар
-async function toggleProductBlock(productId, currentStatus) {
-  try {
-    await db.collection('products').doc(productId).update({ blocked: !currentStatus });
-    Swal.fire('Успех!', !currentStatus ? 'Товар заблокирован' : 'Товар разблокирован', 'success');
-    loadProducts();
-  } catch (error) {
-    console.error('Ошибка при смене статуса блокировки:', error);
-    Swal.fire('Ошибка', 'Не удалось изменить статус блокировки', 'error');
-  }
-}
-
-</script>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="description" content="Хозтовары и мелочи оптом в Кара-Суу. Доставка, низкие цены.">
+  <meta name="google-site-verification" content="KwaNctZFk2BMTScsvlO77JIV6KN4daZPJXP9XRcin9Q" />
   
+  <!-- PWA и мобильное приложение -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Кербен">
+  <meta name="theme-color" content="#87CEEB">
+  
+  <!-- Фон iOS PWA splash = фон анимации -->
+  <style>html,body{background:#87CEEB!important}</style>
+  
+  <!-- Иконки для iOS (iPhone/iPad) -->
+  <link rel="apple-touch-icon" href="icon-kerben.jpg">
+  <link rel="apple-touch-icon" sizes="180x180" href="icon-kerben.jpg">
+  <link rel="apple-touch-icon" sizes="152x152" href="icon-kerben.jpg">
+  <link rel="apple-touch-icon" sizes="120x120" href="icon-kerben.jpg">
+  
+  <!-- Favicon с логотипом Кербен -->
+  <link rel="icon" type="image/jpeg" href="icon-kerben.jpg">
+  <title>Кербен - B2B Market</title>
 
-  <style>
-@media (max-width: 600px) {
-  .admin-product-input {
-    font-size: 1.1rem;
-    padding: 12px 10px;
-    width: 100% !important;
-    min-width: 0;
-    margin: 6px 0;
-    border-radius: 12px;
-  }
-  .admin-product-btn {
-    font-size: 1.1rem;
-    padding: 14px 0;
-    width: 100%;
-    margin: 6px 0;
-    border-radius: 12px;
-    min-width: 0;
-    display: block;
-  }
-  .admin-product-row {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    border-radius: 14px;
-    box-shadow: 0 2px 12px #007bff22;
-    padding: 8px 0;
-  }
-  td, th {
-    font-size: 1rem;
-    padding: 8px 4px;
-  }
-}
-/* --- Красивый редактор товаров для админа --- */
-.admin-product-input {
-  border: 2px solid #90bfff;
-  border-radius: 8px;
-  background: #fafdff;
-  padding: 7px 10px;
-  font-size: 1rem;
-  margin: 2px 0;
-  transition: border 0.2s, box-shadow 0.2s;
-  box-shadow: 0 1px 6px #007bff11;
-}
-.admin-product-input:focus {
-  border: 2px solid #007bff;
-  box-shadow: 0 2px 12px #007bff33;
-  background: #eaf4ff;
-}
-.admin-product-btn {
-  background: linear-gradient(90deg,#007bff 60%,#00c6ff 100%);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 18px;
-  font-size: 1rem;
-  margin: 2px 2px;
-  cursor: pointer;
-  box-shadow: 0 2px 8px #007bff22;
-  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
-}
-.admin-product-btn:hover {
-  background: linear-gradient(90deg,#0056b3 60%,#00aaff 100%);
-  box-shadow: 0 4px 16px #007bff33;
-  transform: scale(1.04);
-}
-.admin-product-row {
-  background: #f0f7ff;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px #007bff11;
-}
-.order-form #cartList {
-  background: #fafdff;
-  border: 2px solid #90bfff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px #007bff11;
-  padding: 8px 0 8px 0;
-  position: relative;
-}
-.cart-scroll-hint {
-  text-align: center;
-  color: #007bff;
-  font-size: 13px;
-  margin-bottom: 4px;
-  font-style: italic;
-  letter-spacing: 0.5px;
-}
-/* Анимация удаления товара из корзины */
-.cart-item-removing {
-  opacity: 0;
-  max-height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  transition: opacity 0.3s, max-height 0.3s, margin 0.3s, padding 0.3s;
-  overflow: hidden;
-}
-.order-form #cartList {
-  max-height: 220px;
-  overflow-y: auto;
-  margin-bottom: 10px;
-}
-@media (max-width: 600px) {
-  .order-form #cartList {
-    max-height: 320px;
-  }
-}
-.cart-item .delete-item {
-  background: #dc3545 !important;
-  color: #fff !important;
-  border: none;
-  font-size: 20px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  margin-left: 8px;
-  transition: background 0.2s;
-}
-.cart-item .delete-item:hover {
-  background: #b71c1c !important;
-}
-@media (max-width: 600px) {
-  .cart-item .delete-item {
-    display: block;
-    width: 100% !important;
-    height: 44px !important;
-    font-size: 2rem;
-    margin: 8px 0 0 0;
-    border-radius: 12px;
-  }
-}
+  <!-- Стили -->
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/index-page.css?v=3">
 
+  <!-- Предзагрузка DNS для быстрого доступа к Firebase и CDN -->
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="dns-prefetch" href="https://wsrv.nl">
+  <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
 
-.search-sort-row {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 15px;
-  width: 100%;
-  max-width: 600px;
-  }
-/* --- Адаптивные стили как на https://kara-ssyy-oomat.github.io/meloch/ --- */
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: 'Arial', sans-serif;
-  background: #FFF9E5 url('фон.avif') center center/cover no-repeat;
-  color: #333;
-}
-h1, h2 {
-  text-align: center;
-  margin-bottom: 20px;
-  animation: fadeIn 1s ease forwards;
-  color: #fff;
-}
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 8px;
-}
-.search-sort-row {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 15px;
-  width: 100%;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
-}
-.search-sort-row input,
-.search-sort-row select,
-.search-sort-row .other-site-btn {
-  flex: 1 1 0;
-  width: 100%;
-  max-width: none;
-  box-sizing: border-box;
-  margin: 10px auto;
-}
-.other-site-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #007bff;
-  color: #fff !important;
-  text-align: center;
-  padding: 10px 0;
-  border-radius: 5px;
-  text-decoration: none;
-  transition: background 0.2s;
-  font-weight: bold;
-  height: 100%;
-}
-.other-site-btn:hover {
-  background: #0056b3;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 20px;
-  background: white;
-  box-shadow: 0 0 10px #ccc;
-  overflow-x: auto;
-  display: block;
-  border-radius: 12px;
-}
-thead th {
-  position: sticky;
-  top: 0;
-  background: #00fff7;
-  z-index: 2;
-}
-th, td {
-  padding: 10px;
-  border: 1px solid #ddd;
-  text-align: center;
-  font-size: 15px;
-}
-th:nth-child(5), td:nth-child(5) {
-  min-width: 90px;
-  width: 80px;
-}
-.product-img {
-  max-width: 60px;
-  height: auto;
-  transition: transform 0.2s, box-shadow 0.2s;
-  border-radius: 8px;
-}
-.product-img:hover {
-  transform: scale(1.08);
-  box-shadow: 0 4px 16px #0002;
-}
-.cart-item {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  margin-bottom: 8px;
-  padding: 4px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-.cart-item-compact {
-  gap: 0;
-  padding: 2px 0;
-  min-height: 40px;
-  align-items: center;
-}
-.cart-mini-img {
-  width: 32px;
-  height: 32px;
-  object-fit: cover;
-  border-radius: 6px;
-  margin-right: 8px;
-  flex-shrink: 0;
-  background: #f8f8f8;
-  box-shadow: 0 1px 4px #0001;
-  display: block;
-}
-.cart-title {
-  flex: 1 1 auto;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.cart-qty, .cart-price, .cart-sum {
-  margin: 0 8px;
-  white-space: nowrap;
-}
-.cart-sum {
-  font-weight: bold;
-}
-.cart-item-compact {
-  gap: 0;
-  padding: 2px 0;
-  min-height: 36px;
-}
-.cart-mini-img {
-  width: 32px;
-  height: 32px;
-  object-fit: cover;
-  border-radius: 6px;
-  margin-right: 8px;
-  flex-shrink: 0;
-  background: #f8f8f8;
-  box-shadow: 0 1px 4px #0001;
-}
-.cart-title {
-  flex: 1 1 auto;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.cart-qty, .cart-price, .cart-sum {
-  margin: 0 8px;
-  white-space: nowrap;
-}
-.cart-sum {
-  font-weight: bold;
-}
-.order-form, #orderHistory {
-  background: #cce4ff;
-  padding: 22px 18px 22px 18px;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px #007bff22, 0 1.5px 0 #007bff inset;
-  margin-top: 20px;
-}
-input, select, button, textarea {
-  font-size: 1rem;
-  padding: 10px;
-  margin: 10px auto;
-  width: 100%;
-  max-width: 400px;
-  display: block;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-}
-button, .other-site-btn {
-  border-radius: 8px;
-  box-shadow: 0 2px 8px #0001;
-  transition: background 0.2s, color 0.2s;
-}
-button:active {
-  transform: scale(0.97);
-}
-button {
+  <!-- Firebase SDKs: критичные для отображения товаров -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
 
-  background: #28a745;
-  color: white;
-  border: none;
-  cursor: pointer;
-  transition: 0.3s;
-}
+  <!-- SweetAlert2 — нужен сразу для UI -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-  button:hover { background: #218838; }
-.delete-order {
-  background: #dc3545;
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  margin-bottom: 6px;
-  margin-top: 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background 0.3s ease;
-}
-  /* Исправлено: всё ниже обёрнуто в .cart-mini-img */
-
-.cart-mini-img {
-  border-radius: 6px;
-  margin-right: 8px;
-  flex-shrink: 0;
-  background: #fff;
-  box-shadow: 0 1px 4px #007bff33;
-  display: block;
-  border: 2px solid #007bff;
-}
-
-button.delete-item:hover {
-  color: #c82333;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes addToCart {
-  0% { transform: scale(1); background-color: #28a745; }
-  50% { transform: scale(1.2); background-color: #218838; }
-  100% { transform: scale(1); background-color: #28a745; }
-}
-.animate-add {
-  animation: addToCart 0.5s ease;
-}
-@media (max-width: 600px) {
-  body {
-    font-size: 1.05rem;
-    padding-bottom: 60px;
-  }
-  .container {
-    max-width: 100vw;
-    padding: 0 2vw;
-  }
-  .order-form, #orderHistory {
-    padding: 10px 2vw;
-    margin-top: 10px;
-    box-shadow: 0 2px 8px #0001;
-    border-radius: 10px;
-  }
-  .order-form input, .order-form button {
-    width: 100%;
-    min-height: 44px;
-    font-size: 1rem;
-    margin-bottom: 10px;
-  }
-  .search-sort-row {
-    flex-direction: column;
-    gap: 0;
-    max-width: 100vw;
-    padding: 0 2vw;
-  }
-  .other-site-btn {
-    font-size: 1rem;
-    padding: 12px 0;
-    margin-top: 8px;
-    border-radius: 8px;
-  }
-  table {
-    display: block;
-    width: 100vw;
-    overflow-x: auto;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px #0001;
-  }
-  thead, tbody, tr {
-    display: table;
-    width: 100%;
-    table-layout: fixed;
-  }
-  th, td {
-    font-size: 13px;
-    padding: 7px 4px;
-    min-width: 70px;
-    word-break: break-word;
-  }
-  th:nth-child(2), td:nth-child(2) {
-    min-width: 60px;
-    max-width: 70px;
-  }
-  .product-img {
-    max-width: 70px;
-    min-width: 44px;
-    width: 100%;
-    height: auto;
-    display: block;
-    margin: 0 auto 6px auto;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px #007bff22;
-    background: #fff;
-    object-fit: contain;
-  }
-  .cart-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-    font-size: 0.98rem;
-  }
-  .cart-summary {
-    font-size: 1.1rem;
-    margin: 8px 0;
-  }
-  #cartList div {
-    font-size: 0.98rem;
-    padding: 4px 0;
-  }
-  button, .order-form button, .other-site-btn {
-    min-height: 44px;
-    font-size: 1rem;
-    padding: 10px 0;
-  }
-  .scroll-buttons {
-    right: 10px;
-    bottom: 10px;
-    gap: 6px;
-  }
-  .scroll-buttons button {
-    font-size: 18px;
-    padding: 10px 14px;
-    border-radius: 12px;
-  }
-  #previewInner {
-    width: 96vw !important;
-    left: 2vw !important;
-    transform: none !important;
-    padding: 6vw 2vw !important;
-  }
-  #previewImg {
-    max-width: 92vw !important;
-    max-height: 60vh !important;
-  }
-  #toggleHistory, #logoutUser {
-    width: 100%;
-    min-height: 44px;
-    font-size: 1rem;
-    margin: 8px 0;
-  }
-  #orderHistory h2 {
-    font-size: 1.1rem;
-    margin-bottom: 10px;
-  }
-  #historyList li {
-  font-size: 0.98rem;
-  margin-bottom: 10px;
-  padding: 8px 4px;
-  border-radius: 8px;
-  box-shadow: 0 1px 4px #0001;
-}
-}
-
-@keyframes addToCart {
-  0% { transform: scale(1); background-color: #28a745; }
-  50% { transform: scale(1.2); background-color: #218838; }
-  100% { transform: scale(1); background-color: #28a745; }
-}
-
-    .animate-add {
-
-      animation: addToCart 0.5s ease;
-
+  <!--
+    ОПТИМИЗАЦИЯ: jsPDF, XLSX, EXIF, Chart.js — загружаются ЛЕНИВО только для админа.
+    Это экономит ~800 КБ трафика для обычных покупателей.
+    Библиотеки загружаются через loadAdminLibraries() при входе в админ-режим.
+  -->
+  <script>
+    // Ленивая загрузка тяжёлых библиотек (только для админа)
+    let _adminLibsLoaded = false;
+    let _adminLibsLoading = false;
+    function loadAdminLibraries() {
+      if (_adminLibsLoaded || _adminLibsLoading) return Promise.resolve();
+      _adminLibsLoading = true;
+      const libs = [
+        'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js',
+        'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'
+      ];
+      return Promise.all(libs.map(src => {
+        return new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = src;
+          s.onload = resolve;
+          s.onerror = () => { console.warn('Failed to load:', src); resolve(); };
+          document.head.appendChild(s);
+        });
+      })).then(() => {
+        _adminLibsLoaded = true;
+        _adminLibsLoading = false;
+        console.log('📚 Админ-библиотеки загружены');
+      });
     }
+  </script>
 
+  <script>
+    // КРИТИЧНО: Принудительно разблокируем прокрутку при загрузке
+    // Принудительная очистка кэшей при обновлении версии
+    (function() {
+      var APP_VERSION = 'v4.0.0';
+      var lastVersion = localStorage.getItem('app_version');
+      if (lastVersion !== APP_VERSION) {
+        console.log('[Update] Обнаружена новая версия: ' + lastVersion + ' → ' + APP_VERSION);
+        localStorage.setItem('app_version', APP_VERSION);
+        // Очищаем все SW кэши
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            names.forEach(function(name) {
+              caches.delete(name);
+              console.log('[Update] Кэш удалён:', name);
+            });
+          });
+        }
+        // Просим SW обновиться
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage('clearAllCaches');
+        }
+        // Перерегистрируем SW
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            registrations.forEach(function(reg) { reg.update(); });
+          });
+        }
+      }
+    })();
+  </script>
+  <script>
 
-
-    @media (max-width: 600px) {
-
-      th, td { font-size: 12px; padding: 6px; }
-
-      input, select, button, textarea { font-size: 0.9rem; padding: 8px; }
-
-      .cart-summary { font-size: 1.2rem; }
-
-      #cartList div { font-size: 0.9rem; }
-
-      .order-form input, .order-form button { width: 90%; }
-
-    }
-    @media (max-width: 600px) {
-  button.delete-item {
-    width: 20px; /* Устанавливаем фиксированную ширину */
-    height: 20px; /* Устанавливаем фиксированную высоту */
-    font-size: 12px; /* Уменьшаем размер текста */
-    padding: 0; /* Убираем лишние отступы */
+// Проверяем, есть ли функция для вызова после загрузки (из страницы профиля)
+document.addEventListener('DOMContentLoaded', function() {
+  const funcToCall = localStorage.getItem('callAfterLoad');
+  if (funcToCall) {
+    localStorage.removeItem('callAfterLoad');
+    // Даём время на инициализацию (defer-скрипты + checkSavedSeller + loadProducts)
+    setTimeout(() => {
+      if (typeof window[funcToCall] === 'function') {
+        window[funcToCall]();
+      }
+    }, 1500);
   }
-}
-
-    @media (max-width: 600px) {
-  th, td { font-size: 12px; padding: 6px; }
-  input, select, button, textarea { font-size: 0.9rem; padding: 8px; }
-  .cart-summary { font-size: 1.2rem; }
-  #cartList div { font-size: 0.9rem; }
-  .order-form input, .order-form button { width: 90%; }
-  button.delete-item {
-    width: 20px;
-    height: 20px;
-    font-size: 12px;
-    padding: 0;
-  }
-}
-
-  </style>
-      
-
-
-
-  <!-- SweetAlert2 -->
-
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11">
-
-// Обновить название товара
-async function updateProductTitle(productId, newTitle) {
-  try {
-    await db.collection('products').doc(productId).update({ title: newTitle });
-    Swal.fire('Успех!', 'Название обновлено', 'success');
-    loadProducts();
-  } catch (error) {
-    console.error('Ошибка при обновлении названия:', error);
-    Swal.fire('Ошибка', 'Не удалось обновить название', 'error');
-  }
-}
-
-// Заблокировать/разблокировать товар
-async function toggleProductBlock(productId, currentStatus) {
-  try {
-    await db.collection('products').doc(productId).update({ blocked: !currentStatus });
-    Swal.fire('Успех!', !currentStatus ? 'Товар заблокирован' : 'Товар разблокирован', 'success');
-    loadProducts();
-  } catch (error) {
-    console.error('Ошибка при смене статуса блокировки:', error);
-    Swal.fire('Ошибка', 'Не удалось изменить статус блокировки', 'error');
-  }
-}
-
-</script>
+});
+  </script>
+  <script>
+    // Подстраховка: скрываем splash максимум через 4 секунды
+    setTimeout(function() {
+      var s = document.getElementById('splashScreen');
+      if (s && !s.classList.contains('splash-hide')) {
+        s.classList.add('splash-hide');
+        setTimeout(function() { s.remove(); }, 350);
+      }
+    }, 4000);
+  </script>
 
 </head>
 
-<body>
-  <!-- Кнопка корзины -->
-  <button id="cartFloatBtn" style="position:fixed;left:20px;bottom:20px;z-index:9999;background:#007bff;color:#fff;border:none;border-radius:50%;width:56px;height:56px;box-shadow:0 2px 12px #007bff44;display:flex;align-items:center;justify-content:center;font-size:26px;cursor:pointer;transition:background 0.2s;">
-    <span id="cartFloatCount" style="position:absolute;top:6px;right:8px;background:#dc3545;color:#fff;border-radius:50%;padding:2px 7px;font-size:14px;font-weight:bold;min-width:22px;text-align:center;">0</span>
-    🛒
-  </button>
+<body style="overflow-y: scroll !important; position: static !important; height: auto !important; touch-action: pan-y !important;">
 
-  <!-- Блок для просмотра фото -->
-  <div id="previewBlock" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:1000; pointer-events:auto;">
-    <div id="previewInner" style="position:absolute; top:10%; left:50%; transform:translateX(-50%); background:white; padding:20px; border-radius:10px; box-shadow:0 0 20px #0008;">
-      <span id="closePreview" style="cursor:pointer; float:right; font-size:24px;">&times;</span>
-      <img id="previewImg" src="" alt="Просмотр" style="max-width:90vw; max-height:70vh; display:block; margin:auto;">
+  <!-- ========== SPLASH SCREEN: Караван Кербен ========== -->
+  <div id="splashScreen">
+    <div class="splash-bg">
+      <div class="splash-dunes"></div>
+      <div class="splash-dunes splash-dunes2"></div>
+      
+      <!-- Караван из эмодзи-верблюдов -->
+      <div class="splash-caravan">
+        <span class="splash-camel">🐫</span>
+        <span class="splash-camel s2">🐫</span>
+        <span class="splash-camel s3">🐪</span>
+      </div>
+      
+      <!-- Лого и название -->
+      <div class="splash-brand">
+        <img src="icon-kerben.jpg" alt="Кербен" class="splash-logo">
+        <div class="splash-title">Кербен</div>
+        <div class="splash-subtitle">B2B Market • Оптовый караван товаров</div>
+      </div>
+      
+      <!-- Индикатор загрузки -->
+      <div class="splash-loader">
+        <div class="splash-dots">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="splash-loader-text">Загрузка товаров...</div>
+      </div>
     </div>
   </div>
-<!-- filepath: c:\Users\hp\Desktop\нож\index.html -->
+  <style>
+    #splashScreen {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 999999;
+      will-change: opacity;
+      transform: translateZ(0);
+    }
+    #splashScreen.splash-hide {
+      -webkit-animation: splashOut 0.3s ease forwards;
+      animation: splashOut 0.3s ease forwards;
+    }
+    @-webkit-keyframes splashOut {
+      to { opacity: 0; pointer-events: none; }
+    }
+    @keyframes splashOut {
+      to { opacity: 0; pointer-events: none; }
+    }
+    .splash-bg {
+      width: 100%; height: 100%;
+      background: linear-gradient(180deg, #87CEEB 0%, #f9c74f 50%, #DEB887 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      overflow: hidden; position: relative;
+    }
+    /* Восстанавливаем белый фон после удаления splash */
+    .splash-gone body, .splash-gone html { background: #fff !important; }
+    .splash-bg::before {
+      content: ''; position: absolute;
+      top: 10%; right: 18%;
+      width: 60px; height: 60px;
+      background: radial-gradient(circle, #FFF9C4 30%, #FFD54F 55%, transparent 68%);
+      border-radius: 50%;
+      box-shadow: 0 0 30px 10px rgba(255,213,79,0.35);
+    }
+    .splash-dunes {
+      position: absolute; bottom: 0; left: -10%; right: -10%;
+      height: 30%; background: #DEB887;
+      border-radius: 50% 60% 0 0 / 100% 100% 0 0;
+      transform: translateZ(0);
+    }
+    .splash-dunes2 {
+      height: 20%; left: -15%; right: -5%;
+      background: #D2B48C;
+      border-radius: 60% 40% 0 0 / 100% 100% 0 0;
+    }
+    .splash-caravan {
+      position: absolute; bottom: 18%;
+      display: flex; gap: 4px; align-items: flex-end;
+      transform: translateZ(0);
+      will-change: transform;
+      -webkit-animation: caravanMove 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+      animation: caravanMove 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    }
+    @-webkit-keyframes caravanMove {
+      from { -webkit-transform: translateX(-100vw) translateZ(0); transform: translateX(-100vw) translateZ(0); }
+      to { -webkit-transform: translateX(0) translateZ(0); transform: translateX(0) translateZ(0); }
+    }
+    @keyframes caravanMove {
+      from { transform: translateX(-100vw) translateZ(0); }
+      to { transform: translateX(0) translateZ(0); }
+    }
+    .splash-camel {
+      font-size: 48px;
+      display: inline-block;
+      transform: scaleX(-1) translateZ(0);
+      -webkit-animation: camelWalk 0.6s ease-in-out infinite;
+      animation: camelWalk 0.6s ease-in-out infinite;
+    }
+    .splash-camel.s2 { font-size: 42px; -webkit-animation-delay: 0.2s; animation-delay: 0.2s; }
+    .splash-camel.s3 { font-size: 38px; -webkit-animation-delay: 0.4s; animation-delay: 0.4s; }
+    @-webkit-keyframes camelWalk {
+      0%, 100% { -webkit-transform: scaleX(-1) translateY(0) translateZ(0); transform: scaleX(-1) translateY(0) translateZ(0); }
+      50% { -webkit-transform: scaleX(-1) translateY(-5px) translateZ(0); transform: scaleX(-1) translateY(-5px) translateZ(0); }
+    }
+    @keyframes camelWalk {
+      0%, 100% { transform: scaleX(-1) translateY(0) translateZ(0); }
+      50% { transform: scaleX(-1) translateY(-5px) translateZ(0); }
+    }
+    .splash-brand {
+      display: flex; flex-direction: column;
+      align-items: center; z-index: 2;
+      transform: translateZ(0);
+      -webkit-animation: brandIn 0.4s ease-out 0.2s both;
+      animation: brandIn 0.4s ease-out 0.2s both;
+    }
+    @-webkit-keyframes brandIn {
+      from { opacity: 0; -webkit-transform: translateY(20px) translateZ(0); transform: translateY(20px) translateZ(0); }
+      to { opacity: 1; -webkit-transform: translateY(0) translateZ(0); transform: translateY(0) translateZ(0); }
+    }
+    @keyframes brandIn {
+      from { opacity: 0; transform: translateY(20px) translateZ(0); }
+      to { opacity: 1; transform: translateY(0) translateZ(0); }
+    }
+    .splash-logo {
+      width: 80px; height: 80px;
+      border-radius: 20px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.2);
+      margin-bottom: 14px;
+    }
+    .splash-title {
+      font-size: 2.6rem; font-weight: 900; color: #fff;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.25);
+      letter-spacing: 3px;
+    }
+    .splash-subtitle {
+      font-size: 0.9rem; color: rgba(255,255,255,0.9);
+      margin-top: 5px; text-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+    .splash-loader {
+      position: absolute; bottom: 8%; z-index: 2;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 10px;
+      -webkit-animation: brandIn 0.3s ease-out 0.5s both;
+      animation: brandIn 0.3s ease-out 0.5s both;
+    }
+    .splash-dots { display: flex; gap: 8px; }
+    .splash-dots span {
+      width: 10px; height: 10px;
+      background: rgba(255,255,255,0.8);
+      border-radius: 50%;
+      -webkit-animation: dotPulse 1s ease-in-out infinite;
+      animation: dotPulse 1s ease-in-out infinite;
+    }
+    .splash-dots span:nth-child(2) { -webkit-animation-delay: 0.15s; animation-delay: 0.15s; }
+    .splash-dots span:nth-child(3) { -webkit-animation-delay: 0.3s; animation-delay: 0.3s; }
+    @-webkit-keyframes dotPulse {
+      0%, 100% { -webkit-transform: scale(0.7); transform: scale(0.7); opacity: 0.4; }
+      50% { -webkit-transform: scale(1); transform: scale(1); opacity: 1; }
+    }
+    @keyframes dotPulse {
+      0%, 100% { transform: scale(0.7); opacity: 0.4; }
+      50% { transform: scale(1); opacity: 1; }
+    }
+    .splash-loader-text {
+      font-size: 0.8rem; color: rgba(255,255,255,0.75);
+    }
+  </style>
 
-  <h1>Мелочь - Каталог товаров</h1>
+  <!-- Блок для просмотра фото -->
+  <div id="previewBlock" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:9800; pointer-events:auto; background: rgba(0,0,0,0.85);">
+    <div id="previewInner" style="position:relative; background:white; padding:12px; border-radius:10px; box-shadow:0 0 20px rgba(0,0,0,0.5); max-width:95vw; max-height:95vh; display:flex; flex-direction:column; align-items:center;">
+      <span id="closePreview" style="position:absolute; top:8px; right:8px; cursor:pointer; font-size:28px; background:#eee; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%; z-index:10;">&times;</span>
+      <div style="text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%;">
+        <img id="previewImg" src="" alt="Просмотр" referrerpolicy="no-referrer" style="max-width:90vw; max-height:80vh; display:block; object-fit:contain;">
+        <div id="previewCaption" style="margin-top:12px;  color:#333; font-weight:500;"></div>
+      </div>
+    </div>
+  </div>
 
+  <!-- Модальное окно редактирования товара -->
+  <div id="editProductModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; width:100%; height:100%; z-index:9000; background:rgba(0,0,0,0.7); overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch;">
+    <div style="max-width:500px; margin:20px auto 80px auto; background:white; border-radius:16px; box-shadow:0 10px 40px rgba(0,0,0,0.3); overflow:hidden;">
+      <!-- Шапка -->
+      <div style="background:linear-gradient(135deg,#007bff,#0056b3); color:white; padding:15px 20px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:10;">
+        <h3 style="margin:0; font-size:18px;">✏️ Редактирование товара</h3>
+        <button onclick="closeEditProductModal()" style="background:rgba(255,255,255,0.2); border:none; color:white; width:36px; height:36px; border-radius:50%; cursor:pointer; font-size:20px;">✕</button>
+      </div>
+      <!-- Содержимое -->
+      <div id="editProductContent" style="padding:20px;"></div>
+    </div>
+  </div>
 
+  <!-- Модальное окно жалобы -->
+  <div id="complaintWindow" style="display:none; position:fixed; top:0; left:0; right:0; bottom:56px; background:#f5f5f5; z-index:9500;">
+    <div style="height:100%; display:flex; flex-direction:column;">
+      
+      <!-- Шапка -->
+      <div style="background:#fff; padding:15px 20px; border-bottom:1px solid #e0e0e0; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+        <div style="font-size:17px; font-weight:600; color:#333;">Жалоба</div>
+        <button onclick="closeComplaintWindow()" style="background:none; border:none; color:#666; font-size:24px; cursor:pointer;">✕</button>
+      </div>
 
-  <div class="search-sort-row">
-    <input type="text" id="search" placeholder="Поиск товара..." />
-    <select id="sort">
-      <option value="">Сортировка по цене</option>
-      <option value="asc">Сначала дешёвые</option>
-      <option value="desc">Сначала дорогие</option>
-    </select>
-    <a href=" https://kara-ssyy-oomat.github.io/scoch/" target="_blank" class="other-site-btn">Другой сайт для скотч</a>
+      <!-- Форма -->
+      <div style="flex:1; overflow-y:auto; padding:20px; background:#fff;">
+        <div style="display:flex; flex-direction:column; gap:15px;">
+          
+          <div>
+            <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">Ваше имя:</label>
+            <input type="text" id="complaintName" placeholder="Введите ваше имя" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; box-sizing:border-box;">
+          </div>
+          
+          <div>
+            <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">Телефон:</label>
+            <input type="tel" id="complaintPhone" placeholder="+996 XXX XXX XXX" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; box-sizing:border-box;">
+          </div>
+          
+          <div>
+            <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">Тема жалобы:</label>
+            <select id="complaintCategory" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; box-sizing:border-box;">
+              <option value="">Выберите категорию</option>
+              <option value="quality">Качество товара</option>
+              <option value="delivery">Проблемы с доставкой</option>
+              <option value="service">Обслуживание</option>
+              <option value="price">Неверная цена</option>
+              <option value="other">Другое</option>
+            </select>
+          </div>
+          
+          <div>
+            <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">Описание проблемы:</label>
+            <textarea id="complaintText" placeholder="Подробно опишите вашу проблему..." style="width:100%; min-height:120px; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; box-sizing:border-box; resize:vertical;"></textarea>
+          </div>
+        </div>
+      </div>
 
-    <a href="https://kara-ssyy-oomat.github.io/noj/" target="_blank" class="other-site-btn">Другой сайт для нож</a>
+      <!-- Кнопка отправки -->
+      <div style="padding:15px 20px; background:#fff; border-top:1px solid #e0e0e0; flex-shrink:0;">
+        <button onclick="sendComplaint()" style="width:100%; padding:15px; background:#333; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:15px;">Отправить жалобу</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Окно предложения товара -->
+  <div id="suggestionWindow" style="display:none; position:fixed; top:0; left:0; right:0; bottom:56px; background:#f5f5f5; z-index:9500;">
+    <div style="height:100%; display:flex; flex-direction:column; position:relative;">
+      <!-- Заголовок -->
+      <div style="background:#fff; padding:15px 20px; border-bottom:1px solid #e0e0e0; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+        <div style="font-size:17px; font-weight:600; color:#333;">Предложить товар</div>
+        <button onclick="closeSuggestionWindow()" style="background:none; border:none; color:#666; font-size:24px; cursor:pointer;">✕</button>
+      </div>
+
+      <!-- Форма -->
+      <div style="flex:1; overflow-y:auto; padding:20px; background:#fff;">
+        <div style="display:flex; flex-direction:column; gap:15px;">
+          
+          <div>
+            <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">Ваше имя:</label>
+            <input type="text" id="suggestionName" placeholder="Введите ваше имя" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; box-sizing:border-box;">
+          </div>
+          
+          <div>
+            <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">Телефон:</label>
+            <input type="tel" id="suggestionPhone" placeholder="+996 XXX XXX XXX" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; box-sizing:border-box;">
+          </div>
+          
+          <div>
+            <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">Название товара:</label>
+            <input type="text" id="suggestionProductName" placeholder="Какой товар вы хотите видеть?" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; box-sizing:border-box;">
+          </div>
+          
+          <div>
+            <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">За сколько сейчас покупаете:</label>
+            <input type="number" id="suggestionCurrentPrice" placeholder="Текущая цена у другого продавца" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; box-sizing:border-box;">
+          </div>
+          
+          <div>
+            <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">Желаемая цена:</label>
+            <input type="number" id="suggestionPrice" placeholder="За сколько вы готовы купить?" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; box-sizing:border-box;">
+          </div>
+          
+          <div>
+            <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">Описание:</label>
+            <textarea id="suggestionDescription" placeholder="Опишите подробности..." style="width:100%; min-height:100px; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; box-sizing:border-box; resize:vertical;"></textarea>
+          </div>
+          
+          <div>
+            <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">Фото товара (необязательно):</label>
+            <input type="file" id="suggestionPhoto" accept="image/*" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; box-sizing:border-box; background:white;">
+          </div>
+        </div>
+      </div>
+
+      <!-- Кнопка отправки -->
+      <div style="padding:15px 20px; background:#fff; border-top:1px solid #e0e0e0; flex-shrink:0;">
+        <button id="suggestionSubmitBtn" onclick="sendSuggestion()" style="width:100%; padding:15px; background:#333; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:15px;">Отправить предложение</button>
+      </div>
+      
+      <!-- Индикатор загрузки -->
+      <div id="suggestionLoader" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); z-index:10; justify-content:center; align-items:center; flex-direction:column;">
+        <div style="width:50px; height:50px; border:5px solid #e0e0e0; border-top:5px solid #333; border-radius:50%; animation:spin 1s linear infinite;"></div>
+        <p style="margin-top:20px; color:#333; font-size:16px; font-weight:600;">Отправка...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Окно "Стать продавцом" -->
+  <div id="becomeSellerWindow" style="display:none; position:fixed; top:0; left:0; right:0; bottom:56px; background:#f5f5f5; z-index:9500;">
+    <div style="height:100%; display:flex; flex-direction:column; position:relative;">
+      <!-- Заголовок -->
+      <div style="background:#fff; padding:15px 20px; border-bottom:1px solid #e0e0e0; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+        <div style="font-size:17px; font-weight:600; color:#333;">Стать продавцом</div>
+        <button onclick="closeBecomeSellerWindow()" style="background:none; border:none; color:#666; font-size:24px; cursor:pointer;">✕</button>
+      </div>
+
+      <!-- Переключатель вкладок -->
+      <div style="display:flex; border-bottom:1px solid #e0e0e0; background:#fff; flex-shrink:0;">
+        <button id="sellerTabRegister" onclick="switchSellerTab('register')" style="flex:1; padding:12px; background:#333; color:white; border:none; cursor:pointer; font-weight:600;">Регистрация</button>
+        <button id="sellerTabLogin" onclick="switchSellerTab('login')" style="flex:1; padding:12px; background:#f5f5f5; color:#333; border:none; cursor:pointer; font-weight:600;">Вход</button>
+      </div>
+
+      <!-- Форма регистрации -->
+      <div id="sellerRegisterForm" style="flex:1; overflow-y:auto; padding:20px; background:#fff;">
+        <div style="display:flex; flex-direction:column; gap:15px;">
+          
+          <div>
+            <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">ФИО / Название компании:</label>
+            <input type="text" id="sellerName" placeholder="Введите ваше имя или название компании" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; box-sizing:border-box;">
+          </div>
+          
+          <div>
+            <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">Телефон (для входа):</label>
+            <input type="tel" id="sellerPhone" placeholder="+996 XXX XXX XXX" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; box-sizing:border-box;">
+          </div>
+          
+          <div>
+            <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">Пароль:</label>
+            <input type="password" id="sellerPassword" placeholder="Придумайте пароль (мин. 4 символа)" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; box-sizing:border-box;">
+          </div>
+          
+          <div>
+            <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">Город/Регион:</label>
+            <input type="text" id="sellerCity" placeholder="Например: Бишкек, Ош" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; box-sizing:border-box;">
+          </div>
+          
+          <div>
+            <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">Какие товары хотите продавать:</label>
+            <input type="text" id="sellerProducts" placeholder="Категории товаров" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; box-sizing:border-box;">
+          </div>
+          
+          <div>
+            <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">Telegram ID:</label>
+            <input type="text" id="sellerTelegramId" placeholder="Например: 123456789" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; box-sizing:border-box;">
+            <p style="margin:5px 0 0; font-size:11px; color:#888;">Узнайте ID у @userinfobot в Telegram</p>
+          </div>
+        </div>
+        
+        <!-- Кнопка регистрации -->
+        <div style="margin-top:20px;">
+          <button id="sellerSubmitBtn" onclick="registerSeller()" style="width:100%; padding:15px; background:#333; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:15px;">Зарегистрироваться</button>
+        </div>
+      </div>
+
+      <!-- Форма входа -->
+      <div id="sellerLoginForm" style="display:none; flex:1; overflow-y:auto; padding:20px; background:#fff;">
+        <div style="display:flex; flex-direction:column; gap:15px;">
+          
+          <div>
+            <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">Телефон:</label>
+            <input type="tel" id="sellerLoginPhone" placeholder="+996 XXX XXX XXX" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; box-sizing:border-box;">
+          </div>
+          
+          <div>
+            <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">Пароль:</label>
+            <input type="password" id="sellerLoginPassword" placeholder="Введите пароль" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; box-sizing:border-box;" onkeypress="if(event.key==='Enter') loginSeller()">
+          </div>
+        </div>
+        
+        <!-- Кнопка входа -->
+        <div style="margin-top:20px;">
+          <button onclick="loginSeller()" style="width:100%; padding:15px; background:#333; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:15px;">Войти</button>
+        </div>
+      </div>
+      
+      <!-- Индикатор загрузки -->
+      <div id="sellerLoader" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); z-index:10; justify-content:center; align-items:center; flex-direction:column;">
+        <div style="width:50px; height:50px; border:5px solid #e0e0e0; border-top:5px solid #333; border-radius:50%; animation:spin 1s linear infinite;"></div>
+        <p style="margin-top:20px; color:#333; font-size:16px; font-weight:600;">Загрузка...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Название сайта -->
+  <div style="text-align:center; margin:20px 0 10px;">
+    <h1 style="font-size:2.5rem; color:#007bff; margin:0; font-weight:900; text-shadow:2px 2px 4px rgba(0,0,0,0.1);">B2B Market</h1>
+    <p style="font-size:0.9rem; color:#666; margin:5px 0 0;">Оптовые товары по выгодным ценам</p>
+  </div>
+
+  <!-- Кнопка установки PWA приложения -->
+  <div id="installPwaContainer" style="display:none; padding:10px; background:linear-gradient(135deg, #667eea, #764ba2); margin:0 10px 10px; border-radius:12px; box-shadow:0 4px 15px rgba(102,126,234,0.3);">
+    <div style="display:flex; align-items:center; justify-content:space-between; color:white;">
+      <div style="flex:1;">
+        <div style="font-size:16px; font-weight:700; margin-bottom:4px;">📱 Установить приложение Кербен</div>
+        <div style="font-size:13px; opacity:0.9;">Быстрый доступ с главного экрана</div>
+      </div>
+      <button id="installPwaBtn" style="background:white; color:#667eea; border:none; padding:10px 20px; border-radius:8px; font-weight:700; cursor:pointer; font-size:14px; margin-left:10px;">Установить</button>
+      <button onclick="document.getElementById('installPwaContainer').style.display='none'" style="background:rgba(255,255,255,0.2); color:white; border:none; width:30px; height:30px; border-radius:50%; cursor:pointer; margin-left:8px; font-size:18px;">×</button>
+    </div>
+  </div>
+
+  <!-- Верхний промо-слайдер: две рекламные карточки (swipe) -->
+  <!-- Категории товаров -->
+  <div class="category-tabs">
+    <button class="category-btn active" onclick="filterByCategory('все')" data-category="все">Все товары</button>
+    <button class="category-btn" onclick="toggleOtherCategories()" id="otherCategoriesBtn" style="background:linear-gradient(90deg, #6c757d, #495057);">📂 Другие категории ▼</button>
+    <div id="otherCategoriesContainer">
+      <button class="category-btn" onclick="filterByCategory('ножницы')" data-category="ножницы">✂️ Ножницы</button>
+      <button class="category-btn" onclick="filterByCategory('скотч')" data-category="скотч">Скотч</button>
+      <button class="category-btn" onclick="filterByCategory('нож')" data-category="нож">🔪 Нож</button>
+      <button class="category-btn" onclick="filterByCategory('корейские')" data-category="корейские">Корейские товары</button>
+      <button class="category-btn" onclick="filterByCategory('часы')" data-category="часы">⌚ Часы</button>
+      <button class="category-btn" onclick="filterByCategory('электроника')" data-category="электроника">🔌 Электроника</button>
+      <button class="category-btn" onclick="filterByCategory('бытовые')" data-category="бытовые">Бытовые техники</button>
+      <!-- Категории продавцов будут добавлены сюда динамически -->
+      <div id="sellerCategoriesContainer" style="display:contents;"></div>
+    </div>
+  </div>
+
+  <!-- Кнопка редактора (скрыта по умолчанию, видна только админу) -->
+  <div id="editorBtnContainer" style="display:none; justify-content:center; padding:8px 10px 0;">
+    <button id="editorModeBtn" onclick="toggleEditorMode()" style="padding:10px 20px; background:linear-gradient(135deg,#6c757d,#495057); color:white; border:none; border-radius:20px; cursor:pointer; font-size:14px; font-weight:600; display:flex; align-items:center; gap:6px;">
+      ✏️ Редактор
+    </button>
+  </div>
+
+  <!-- Расширенный поиск с фильтрами -->
+  <div class="search-container">
+    <div class="search-main">
+      <div class="search-input-wrap" style="width: 100%; position: relative;">
+        <input type="text" id="search" placeholder="🔍 Поиск товара..." oninput="scheduleRenderProducts()" autocomplete="off" style="width: 100%; padding-right: 96px;" />
+        <button type="button" id="searchClearBtn" class="search-clear-btn" onclick="clearSearch()">&times;</button>
+        <button class="filter-toggle-btn" id="filterToggleBtn" onclick="toggleFilters()" title="Фильтры">⚙️</button>
+        <button id="voiceSearchBtn" class="voice-search-btn" onclick="startVoiceSearch()" title="Голосовой поиск">🎤</button>
+      </div>
+    </div>
+    
+    <div class="search-filters" id="searchFilters">
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>💰 Цена</label>
+          <div class="price-range">
+            <input type="number" id="priceMin" placeholder="От" min="0" />
+            <span>—</span>
+            <input type="number" id="priceMax" placeholder="До" min="0" />
+          </div>
+        </div>
+        
+        <div class="filter-group">
+          <label>📦 Наличие</label>
+          <select id="stockFilter">
+            <option value="all">Все товары</option>
+            <option value="instock">В наличии</option>
+            <option value="outofstock">Нет в наличии</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label>📊 Сортировка</label>
+          <select id="sort">
+            <option value="">По умолчанию</option>
+            <option value="asc">Сначала дешёвые</option>
+            <option value="desc">Сначала дорогие</option>
+            <option value="name_asc">По названию А-Я</option>
+            <option value="name_desc">По названию Я-А</option>
+            <option value="new">Сначала новые</option>
+          </select>
+        </div>
+        
+        <div class="filter-actions">
+          <button class="filter-apply-btn" onclick="applyFilters()">✅ Применить</button>
+          <button class="filter-reset-btn" onclick="resetFilters()">🔄 Сбросить</button>
+        </div>
+      </div>
+      
+      <div class="search-tags" id="activeTags"></div>
+    </div>
+    
+    <div class="search-results-info" id="searchResultsInfo" style="display:none;">
+      <span id="resultsText">Найдено: 0 товаров</span>
+      <span class="clear-search" onclick="resetFilters()">✖ Очистить поиск</span>
+    </div>
   </div>
 
 
 
-  <table>
-
-    <thead>
-      <tr>
-        <th>№</th>
-        <th>Фото</th>
-        <th>Название</th>
-        <th>Цена</th>
-        <th>Кол-во</th>
-        <th>Добавить</th>
-        <th id="managementHeader" style="display: none;">Управление</th>
-      </tr>
-    </thead>
-
-    <tbody id="productTable"></tbody>
-
-  </table>
+  <!-- Сетка карточек товаров -->
+  <div id="productTable" class="product-grid"></div>
+  <script>
+    // Применяем размер карточек из настроек
+    (function() {
+      var s = localStorage.getItem('cardSize') || 'small';
+      if (s === 'small') {
+        document.getElementById('productTable').classList.add('cards-small');
+      }
+    })();
+  </script>
 
 
 
@@ -730,1217 +663,306 @@ async function toggleProductBlock(productId, currentStatus) {
 
     <h2>Оформить заказ</h2>
 
-    <div id="cartList"></div>
-
-    <div class="cart-summary">Итого: <span id="totalSum">0</span> с</div>
-
-    <button id="clearCart">Очистить корзину</button>
+    <div style="display:flex;gap:8px; margin-bottom:10px;">
+      <button id="openCartBtn" onclick="if(typeof navGoCartFromMain==='function')navGoCartFromMain();else if(document.querySelector('[data-nav=&quot;cart&quot;]'))document.querySelector('[data-nav=&quot;cart&quot;]').click();" style="width:100%; padding:14px; background:linear-gradient(135deg, #333, #555); color:white; border:none; border-radius:10px; cursor:pointer; font-size:16px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px;">🛒 Открыть корзину</button>
+    </div>
 
     <input type="text" id="name" placeholder="Ваше имя" required />
 
     <input type="tel" id="phone" placeholder="Телефон" required />
 
     <input type="text" id="address" placeholder="Адрес доставки" required />
+    
+    <input type="text" id="driverName" placeholder="Имя водителя (необязательно)" style="background:#f8f9fa; border:2px solid #e9ecef;" />
+    
+    <input type="tel" id="driverPhone" placeholder="Номер водителя (необязательно)" style="background:#f8f9fa; border:2px solid #e9ecef;" />
+    
+    <input type="text" id="referredBy" placeholder="Кто вам порекомендовал? (необязательно)" style="background:#f8f9fa; border:2px solid #e9ecef;" />
 
     <button id="submitOrder">Отправить заказ</button>
+    
+    <button type="button" onclick="openTrackOrderModal()" style="width:100%; padding:14px; margin-top:10px; background:linear-gradient(135deg, #17a2b8 0%, #138496 100%); color:white; border:none; border-radius:10px; cursor:pointer; font-size:16px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:10px;">
+      📦 Отслеживать мой заказ
+    </button>
 
   </div>
 
   <button id="logoutUser" style="margin:10px 0;">Выйти из профиля</button>
 
-  <button id="toggleHistory">История заказов</button>
-
-  <div id="orderHistory" style="display:none">
-
-    <h2>История заказов</h2>
-
-    <ul id="historyList"></ul>
-
-  </div>
-
-  <div id="adminAuth" style="margin:20px 0;">
-    <h3>Вход для администратора</h3>
-    <input type="password" id="adminPassword" placeholder="Пароль администратора">
-    <button id="loginAdmin">Войти</button>
-  </div>
-
-  <div id="adminAddProduct" style="margin:20px 0; display: none;">
-    <h3>Добавить товар (только для администратора)</h3>
-    <input type="text" id="newTitle" placeholder="Название товара">
-    <input type="number" id="newPrice" placeholder="Цена">
-    <input type="number" id="newOptPrice" placeholder="Оптовая цена">
-    <input type="number" id="newOptQty" placeholder="Минимальное количество для опта">
-    <input type="number" id="newMinQty" placeholder="Минимальное количество для покупки">
-    <div style="display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap;">
-      <input type="file" id="imageFile" accept="image/*" style="flex: 1;">
-      <input type="file" id="galleryFile" accept="image/*" style="display: none;">
-      <button id="openGallery" style="flex: 1;" onclick="document.getElementById('galleryFile').click()">Выбрать из галереи</button>
-    </div>
-    <input type="text" id="newImage" placeholder="URL изображения или оставить пустым для загрузки" style="display: block; margin-bottom: 5px;">
-    <button id="previewUrlBtn" style="margin-bottom: 10px;">Показать предпросмотр по URL</button>
-    <div id="imagePreview" style="margin: 10px 0; display: none;">
-      <img id="previewImg" src="" alt="Предпросмотр" style="max-width: 200px; max-height: 200px;">
-    </div>
-    <button id="addProductBtn">Добавить товар</button>
-  </div>
-
   <div id="adminProductsBlock"></div>
 
-
-
-  <script>
- let products = [];
- let isAdmin = false;
-
-// Инициализация Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyBRQ6hH7kXq7ApJmqbvTG1EQsXwxWEnaGg",
-  authDomain: "svoysayet.firebaseapp.com",
-  projectId: "svoysayet",
-  storageBucket: "svoysayet.firebasestorage.app",
-  messagingSenderId: "450143000217",
-  appId: "1:450143000217:web:7495cefaea0b94966e8a08",
-  measurementId: "G-Y8VG9E29FY"
-};
-
-// Проверка инициализации Firebase
-try {
-  if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-  }
-  console.log('Firebase initialized successfully');
-} catch (error) {
-  console.error('Firebase initialization error:', error);
-  Swal.fire('Ошибка', 'Ошибка инициализации Firebase: ' + error.message, 'error');
-}
-
-const db = firebase.firestore();
-const storage = firebase.storage();
-
-// Пароль администратора
-const ADMIN_PASSWORD = "009860";
-
-// Загрузка товаров
-async function loadProducts() {
-  try {
-    console.log('Loading products...');
-    let snapshot;
-    try {
-      snapshot = await db.collection('products').orderBy('order').get();
-    } catch (e) {
-      // Если нет поля order, загружаем без сортировки
-      snapshot = await db.collection('products').get();
-    }
-    products = [];
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      if (data.image) {
-        data.image = fixImageUrl(data.image);
-      }
-      products.push({ id: doc.id, ...data });
-    });
-    // Если нет сортировки по order, сортируем по названию
-    if (!products.every(p => typeof p.order === 'number')) {
-      products.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    } else {
-      products.sort((a, b) => (a.order || 0) - (b.order || 0));
-    }
-    console.log('Products loaded:', products.length);
-    renderProducts();
-  } catch (error) {
-    console.error('Error loading products:', error);
-    Swal.fire('Ошибка', 'Не удалось загрузить товары: ' + error.message, 'error');
-  }
-}
-
-// Добавляем функцию для проверки и исправления URL изображений
-function fixImageUrl(url) {
-  if (!url) return 'no-image.png';
-  
-  // Если это просто имя файла (без пути)
-  if (!url.includes('/') && !url.startsWith('http')) {
-    // Добавляем путь к локальной директории с изображениями
-    return './images/' + url;
-  }
-  
-  return url;
-}
-
-// Функция для загрузки изображения в Firebase Storage
-async function uploadImageToStorage(file) {
-  try {
-    console.log('Starting image upload...');
-    const storageRef = storage.ref();
-    const fileName = `${Date.now()}_${file.name}`;
-    const fileRef = storageRef.child(`products/${fileName}`);
-    
-    console.log('Uploading file:', fileName);
-    const snapshot = await fileRef.put(file);
-    console.log('Upload completed:', snapshot);
-    
-    const downloadURL = await fileRef.getDownloadURL();
-    console.log('Download URL:', downloadURL);
-    
-    return downloadURL;
-  } catch (error) {
-    console.error('Error uploading image:', error);
-    throw error;
-  }
-}
-
-
-// === Cloudinary upload helper ===
-async function uploadToCloudinary(file) {
-  const cloudName = 'dya0j6wgv'; // ← ВСТАВЬ СЮДА ИЗ Cloudinary // ← замени на свой cloud_name (позже)
-  const uploadPreset = 'mystore_upload';
-
-  const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('upload_preset', uploadPreset);
-
-  const res = await fetch(url, {
-    method: 'POST',
-    body: formData
-  });
-
-  const data = await res.json();
-  if (data.secure_url) {
-    return data.secure_url;
-  } else {
-    throw new Error('Ошибка загрузки на Cloudinary');
-  }
-}
-
-
-// === Imgur upload helper ===
-async function uploadToImgur(file) {
-  const clientId = 'YOUR_IMGUR_CLIENT_ID'; // Замените на свой Client-ID с https://api.imgur.com/oauth2/addclient
-  const formData = new FormData();
-  formData.append('image', file);
-  const res = await fetch('https://api.imgur.com/3/image', {
-    method: 'POST',
-    headers: { Authorization: 'Client-ID ' + clientId },
-    body: formData
-  });
-  const data = await res.json();
-  if (data.success && data.data && data.data.link) {
-    return data.data.link;
-  } else {
-    throw new Error('Ошибка загрузки на Imgur');
-  }
-}
-
-// === Postimages upload helper ===
-async function uploadToPostimages(file) {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('upload_session', '');
-  formData.append('numfiles', 1);
-  formData.append('optsize', 0);
-  formData.append('expire', 0);
-  const res = await fetch('https://api.postimages.org/1/upload', {
-    method: 'POST',
-    body: formData
-  });
-  const data = await res.json();
-  if (data && data.direct_link) {
-    return data.direct_link;
-  } else {
-    throw new Error('Ошибка загрузки на Postimages');
-  }
-}
-
-
-
-// Обработчик выбора файлач
-// Теперь фото загружается на ImageBB, ссылка подставляется в newImage
-
-document.getElementById('imageFile').addEventListener('change', async function(e) {
-  const file = e.target.files[0];
-  const addBtn = document.getElementById('addProductBtn');
-  if (file) {
-    addBtn.disabled = true;
-    document.getElementById('newImage').value = '';
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      document.getElementById('previewImg').src = e.target.result;
-      document.getElementById('imagePreview').style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-    try {
-      // const url = await uploadImageToStorage(file); // Отключаем Firebase Storage
-      // const url = await uploadToImgur(file); // Отключаем Imgur
-      // const url = await uploadToPostimages(file); // Отключаем Postimages
-      const url = await uploadToCloudinary(file);
-      document.getElementById('newImage').value = url;
-      addBtn.disabled = false;
-      Swal.fire('Фото загружено на ImageBB!', '', 'success');
-      console.log('Image uploaded to ImageBB and url set to newImage input:', url);
-    } catch (err) {
-      Swal.fire('Ошибка', 'Не удалось загрузить изображение на ImageBB', 'error');
-      addBtn.disabled = false;
-    }
-  }
-});
-
-// Обработчик выбора файла из галереи
-// Теперь фото из галереи загружается на ImageBB
-
-document.getElementById('galleryFile').addEventListener('change', async function(e) {
-  const file = e.target.files[0];
-  const addBtn = document.getElementById('addProductBtn');
-  if (file) {
-    addBtn.disabled = true;
-    document.getElementById('newImage').value = '';
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      document.getElementById('previewImg').src = e.target.result;
-      document.getElementById('imagePreview').style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-    try {
-      // const url = await uploadImageToStorage(file); // Отключаем Firebase Storage
-      // const url = await uploadToImgur(file); // Отключаем Imgur
-      // const url = await uploadToPostimages(file); // Отключаем Postimages
-      const url = await uploadToCloudinary(file);
-      document.getElementById('newImage').value = url;
-      addBtn.disabled = false;
-      Swal.fire('Фото загружено на ImageBB!', '', 'success');
-      console.log('Image from gallery uploaded to ImageBB and url set to newImage input:', url);
-    } catch (err) {
-      Swal.fire('Ошибка', 'Не удалось загрузить изображение на ImageBB', 'error');
-      addBtn.disabled = false;
-    }
-  }
-});
-
-// Обработчик кнопки добавления товара
-// Теперь добавлена автоматическая проверка валидности изображения по URL
-
-document.getElementById('addProductBtn').addEventListener('click', async function() {
-  try {
-    console.log('Add product button clicked');
-    const title = document.getElementById('newTitle').value.trim();
-    const price = +document.getElementById('newPrice').value;
-    const optPrice = +document.getElementById('newOptPrice').value;
-    const optQty = +document.getElementById('newOptQty').value;
-    const minQty = +document.getElementById('newMinQty').value;
-    const urlInput = document.getElementById('newImage').value.trim();
-    let imageUrl = '';
-    if (urlInput) {
-      imageUrl = urlInput;
-      console.log('Using manual url:', imageUrl);
-    } else {
-      imageUrl = document.getElementById('newImage').value.trim();
-      if (!imageUrl) {
-        Swal.fire('Ошибка', 'Укажите URL изображения или загрузите файл!', 'warning');
-        return;
-      }
-    }
-
-    // Валидация
-    if (!title) {
-      Swal.fire('Ошибка', 'Введите название товара', 'warning');
-      return;
-    }
-    if (!price || price <= 0) {
-      Swal.fire('Ошибка', 'Введите корректную цену', 'warning');
-      return;
-    }
-
-    // --- Индикатор проверки изображения ---
-    const addBtn = document.getElementById('addProductBtn');
-    addBtn.disabled = true;
-    addBtn.textContent = 'Проверка изображения...';
-    const isValidImage = await checkImage(imageUrl);
-    if (!isValidImage) {
-      addBtn.disabled = false;
-      addBtn.textContent = 'Добавить товар';
-      Swal.fire('Ошибка', 'Изображение не загружается! Проверьте ссылку или попробуйте другой файл/URL.', 'error');
-      return;
-    }
-    addBtn.textContent = 'Добавить товар';
-    addBtn.disabled = false;
-    // --- конец индикатора ---
-
-    // Находим максимальный order среди товаров
-    let maxOrder = 0;
-    products.forEach(p => {
-      if (typeof p.order === 'number' && p.order > maxOrder) maxOrder = p.order;
-    });
-
-    const productData = { 
-      title, 
-      price, 
-      optPrice: optPrice > 0 ? optPrice : null,
-      optQty: optQty > 0 ? optQty : null,
-      minQty: minQty > 0 ? minQty : 1,
-      image: imageUrl,
-      order: maxOrder + 1 
-    };
-    
-    console.log('Adding product to Firestore:', productData);
-    const docRef = await db.collection('products').add(productData);
-    console.log('Product added with ID:', docRef.id);
-    await loadProducts();
-    renderProducts();
-    Swal.fire('Товар добавлен!', '', 'success');
-    await loadProducts();
-    // Очистка формы
-    document.getElementById('newImage').value = '';
-    document.getElementById('newTitle').value = '';
-    document.getElementById('newPrice').value = '';
-    document.getElementById('newOptPrice').value = '';
-    document.getElementById('newOptQty').value = '';
-    document.getElementById('newMinQty').value = '';
-    document.getElementById('imageFile').value = '';
-    document.getElementById('imagePreview').style.display = 'none';
-  } catch (error) {
-    console.error('Error details:', error);
-    document.getElementById('addProductBtn').disabled = false;
-    document.getElementById('addProductBtn').textContent = 'Добавить товар';
-    Swal.fire('Ошибка', `Не удалось добавить товар: ${error.message}`, 'error');
-  }
-});
-
-// === Исправление фона сайта: если файл фон.avif отсутствует, заменяем на стандартный фон ===
-(function fixBackground() {
-  const img = new window.Image();
-  img.onload = function() { /* всё ок */ };
-  img.onerror = function() {
-    document.body.style.backgroundImage = 'none';
-    document.body.style.background = '#f4f4f4';
-  };
-  img.src = 'фон.avиф';
-})();
-
-// Инициализация корзины
-const cart = JSON.parse(localStorage.getItem('cart')) || [];
-
-const productTable = document.getElementById('productTable');
-const search = document.getElementById('search');
-const sort = document.getElementById('sort');
-const cartList = document.getElementById('cartList');
-const totalSum = document.getElementById('totalSum');
-
-
-// Автозаполнение данных пользователя из localStorage
-const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-if (userData.name) document.getElementById('name').value = userData.name;
-if (userData.phone) document.getElementById('phone').value = userData.phone;
-if (userData.address) document.getElementById('address').value = userData.address;
-
-function addToCart(id, title, price, image, btn) {
-  const row = btn.parentElement.parentElement;
-  const qtyInput = row.querySelector('input');
-  const qty = +qtyInput.value;
-
-  const product = products.find(p => p.id === id);
-
-  if (qty < (product.minQty || 1)) {
-    Swal.fire('Ошибка', `Минимальное количество для покупки: ${product.minQty || 1}`, 'warning');
-    qtyInput.value = product.minQty || 1;
-    return;
-  }
-
-  // Считаем итоговое количество этого товара в корзине
-  const index = cart.findIndex(item => item.id === id);
-  let totalQty = qty;
-  if (index !== -1) totalQty += cart[index].qty;
-
-  // Определяем цену: если опт, то оптовая цена
-  let finalPrice = price;
-  if (product.optQty && totalQty >= product.optQty && product.optPrice) {
-    finalPrice = product.optPrice;
-  }
-
-  // Добавление или обновление в корзине
-  if (index !== -1) {
-    cart[index].qty += qty;
-cart[index].price = (product.optQty && cart[index].qty >= product.optQty && product.optPrice)
-  ? product.optPrice
-  : product.price;
-  } else {
-    cart.push({ id, title, price: finalPrice, qty, image });
-  }
-
-  updateCart();
-
-  btn.classList.add('animate-add');
-  setTimeout(() => btn.classList.remove('animate-add'), 500);
-
-  Swal.fire({
-    title: 'Товар добавлен в корзину!',
-    text: `${title} × ${qty} был добавлен в вашу корзину.`,
-    icon: 'success',
-    confirmButtonText: 'Ок',
-    position: 'bottom',
-    showConfirmButton: true,
-    timer: 1500,
-    padding: '10px',
-    toast: true
-  });
-
-  localStorage.setItem('cart', JSON.stringify(cart));
-}
-
-function updateCart() {
-  // Показываем подсказку о прокрутке, если товаров больше 4
-  let scrollHint = document.getElementById('cartScrollHint');
-  if (!scrollHint) {
-    scrollHint = document.createElement('div');
-    scrollHint.id = 'cartScrollHint';
-    scrollHint.className = 'cart-scroll-hint';
-    cartList.parentNode.insertBefore(scrollHint, cartList);
-  }
-  if (cart.length > 4) {
-    scrollHint.textContent = 'Прокрутите список товаров ↓';
-    scrollHint.style.display = '';
-  } else {
-    scrollHint.style.display = 'none';
-  }
-  cartList.innerHTML = '';
-
-  let total = 0;
-
-  cart.forEach((item, i) => {
-    // Пересчитываем цену для каждого товара в корзине
-    const product = products.find(p => p.id === item.id);
-    if (product) {
-    if (product.optQty && item.qty >= product.optQty && product.optPrice) {
-  item.price = product.optPrice;
-} else {
-  item.price = product.price;
-}
-
-    }
-    total += item.qty * item.price;
-
-    // Мини-фото (если есть)
-    const imgSrc = (product && product.image) ? product.image : 'no-image.png';
-    const div = document.createElement('div');
-    div.classList.add('cart-item', 'cart-item-compact');
-    div.innerHTML = `
-      <img src="${imgSrc}" alt="" class="cart-mini-img" style="cursor:pointer;" onclick="showPreview('${imgSrc}')">
-      <div class="cart-info-row" style="display:flex;align-items:center;flex:1 1 auto;gap:8px;min-width:0;">
-        <span class="cart-title" style="flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.title}</span>
-        <span class="cart-qty" style="white-space:nowrap;">×${item.qty}</span>
-        <span class="cart-price" style="white-space:nowrap;">${item.price}c</span>
-        <span class="cart-sum" style="white-space:nowrap;font-weight:bold;">${item.qty * item.price}c</span>
-      </div>
-      <button class="delete-item" onclick="removeFromCart(${i})">&times;</button>
-    `;
-    cartList.appendChild(div);
-  });
-
-  totalSum.textContent = total;
-
-  // Проверка на пустоту корзины
-  const clearCartButton = document.getElementById('clearCart');
-  if (cart.length === 0) {
-    clearCartButton.style.display = 'none';
-  } else {
-    clearCartButton.style.display = 'block';
-  }
-
-  localStorage.setItem('cart', JSON.stringify(cart));
-}
-
-function removeFromCart(i) {
-  // Анимация удаления
-  const cartList = document.getElementById('cartList');
-  const itemDiv = cartList.children[i];
-  if (itemDiv) {
-    itemDiv.classList.add('cart-item-removing');
-    setTimeout(() => {
-      cart.splice(i, 1);
-      updateCart();
-    }, 300);
-  } else {
-    cart.splice(i, 1);
-    updateCart();
-  }
-}
-
-// Обработчик кнопки очистки корзины
-document.getElementById('clearCart').onclick = () => {
-  cart.length = 0;
-  updateCart();
-  localStorage.removeItem('cart');
-  Swal.fire('Корзина очищена!', '', 'success');
-};
-
-// Инициализация корзины при загрузке страницы
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('DOM loaded, initializing...');
-  try {
-    loadProducts();
-    updateCart(); // Обновляем отображение корзины
-    // Если уже был вход как админ (например, после обновления), показать панель
-    if (isAdmin) document.getElementById('adminPanel').style.display = '';
-  } catch (error) {
-    console.error('Error during initialization:', error);
-    Swal.fire('Ошибка', 'Ошибка при загрузке страницы: ' + error.message, 'error');
-  }
-});
-
-document.getElementById('submitOrder').onclick = async () => {
-  const name = document.getElementById('name').value.trim();
-  const phone = document.getElementById('phone').value.trim();
-  const address = document.getElementById('address').value.trim();
-
-  if (!name || !phone || !address || cart.length === 0) {
-    Swal.fire('Ошибка', 'Заполните все поля и добавьте товары', 'warning');
-    return;
-  }
-
-  try {
-    const items = cart.map(i => `${i.title} — ${i.qty}×${i.price}c=${i.qty * i.price}`).join('\n');
-    const total = cart.reduce((sum, item) => sum + item.qty * item.price, 0);
-    const currentTime = new Date().toLocaleString();
-
-    // Сохраняем заказ в Firebase
-    await db.collection('orders').add({
-      name,
-      phone,
-      address,
-      items: cart.map(item => ({
-        title: item.title,
-        qty: item.qty,
-        price: item.price
-      })),
-      total,
-      time: currentTime,
-      status: 'Новый'
-    });
-
-    const msg = `Новый заказ:
-Имя: ${name}
-Телефон: ${phone}
-Адрес: ${address}
-Товары:
-${items}
-
-Итого: ${total}c`;
-
-    // Отправляем уведомление в Telegram
-    await fetch('https://api.telegram.org/bot7960727448:AAF0B2mizrzj7sjHP68n-1IcjLoNc6kwVkE/sendMessage', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: '5567924440', text: msg })
-    });
-      await fetch('https://api.telegram.org/bot7960727448:AAF0B2mizrzj7sjHP68n-1IcjLoNc6kwVkE/sendMessage', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: '246421345', text: msg })
-    });
-
-    Swal.fire('Успех!', 'Ваш заказ отправлен!', 'success');
-    
-    // Очищаем корзину
-    cart.length = 0;
-    updateCart();
-    localStorage.removeItem('cart');
-    
-    // Сохраняем данные пользователя
-    localStorage.setItem('userData', JSON.stringify({
-      name,
-      phone,
-      address
-    }));
-
-    // Очищаем форму
-    document.getElementById('name').value = '';
-    document.getElementById('phone').value = '';
-    document.getElementById('address').value = '';
-
-    // Обновляем историю заказов
-    loadOrderHistory();
-
-  } catch (error) {
-    console.error('Error submitting order:', error);
-    Swal.fire('Ошибка', 'Не удалось отправить заказ. Попробуйте позже.', 'error');
-  }
-};
-
-// Функция загрузки истории заказов
-async function loadOrderHistory() {
-  try {
-    const snapshot = await db.collection('orders')
-      .orderBy('time', 'desc')
-      .get();
-    
-    const historyList = document.getElementById('historyList');
-    historyList.innerHTML = '';
-
-    if (snapshot.empty) {
-      historyList.innerHTML = '<li>История заказов пуста.</li>';
-      return;
-    }
-
-    snapshot.forEach(doc => {
-      const order = doc.data();
-      const li = document.createElement('li');
-      li.style.marginBottom = '20px';
-      li.style.padding = '10px';
-      li.style.border = '1px solid #ddd';
-      li.style.borderRadius = '5px';
       
-      li.innerHTML = `
-        <strong>Заказ от: ${order.time}</strong>
-        <p>Имя: ${order.name}</p>
-        <p>Телефон: ${order.phone}</p>
-        <p>Адрес: ${order.address}</p>
-        <p>Товары: ${order.items.map(i => `${i.title} × ${i.qty}`).join(', ')}</p>
-        <p><strong>Итого: ${order.total}c</strong></p>
-        <p>Статус: ${order.status}</p>
-        ${isAdmin ? `
-          <button class="delete-order" onclick="deleteOrder('${doc.id}')">Удалить</button>
-          <select onchange="updateOrderStatus('${doc.id}', this.value)" style="margin-left: 10px;">
-            <option value="Новый" ${order.status === 'Новый' ? 'selected' : ''}>Новый</option>
-            <option value="В обработке" ${order.status === 'В обработке' ? 'selected' : ''}>В обработке</option>
-            <option value="Выполнен" ${order.status === 'Выполнен' ? 'selected' : ''}>Выполнен</option>
-            <option value="Отменен" ${order.status === 'Отменен' ? 'selected' : ''}>Отменен</option>
-          </select>
-        ` : ''}
-      `;
-      historyList.appendChild(li);
-    });
-  } catch (error) {
-    console.error('Error loading order history:', error);
-    Swal.fire('Ошибка', 'Не удалось загрузить историю заказов', 'error');
-  }
-}
 
-// Функция удаления заказа
-async function deleteOrder(orderId) {
-  try {
-    const result = await Swal.fire({
-      title: 'Удалить заказ?',
-      text: "Это действие нельзя отменить!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#dc3545',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: 'Да, удалить!',
-      cancelButtonText: 'Отмена'
-    });
-
-    if (result.isConfirmed) {
-      await db.collection('orders').doc(orderId).delete();
-      Swal.fire('Удалено!', 'Заказ был успешно удален.', 'success');
-      loadOrderHistory();
-    }
-  } catch (error) {
-    console.error('Error deleting order:', error);
-    Swal.fire('Ошибка', 'Не удалось удалить заказ', 'error');
-  }
-}
-
-// Функция обновления статуса заказа
-async function updateOrderStatus(orderId, newStatus) {
-  try {
-    await db.collection('orders').doc(orderId).update({
-      status: newStatus
-    });
-    loadOrderHistory();
-  } catch (error) {
-    console.error('Error updating order status:', error);
-    Swal.fire('Ошибка', 'Не удалось обновить статус заказа', 'error');
-  }
-}
-
-// Обработчик кнопки истории заказов
-document.getElementById('toggleHistory').onclick = () => {
-  const hist = document.getElementById('orderHistory');
-  hist.style.display = hist.style.display === 'none' ? 'block' : 'none';
-  
-  if (hist.style.display === 'block') {
-    loadOrderHistory();
-  }
-};
-
-search.oninput = renderProducts;
-sort.onchange = renderProducts;
-renderProducts();
-updateCart();
-
-function showPreview(src) {
-  document.getElementById('previewImg').src = src;
-  document.getElementById('previewBlock').style.display = 'block';
-  document.body.classList.add('modal-open');
-}
-
-document.getElementById('closePreview').onclick = function() {
-  document.getElementById('previewBlock').style.display = 'none';
-  document.body.classList.remove('modal-open');
-};
-
-document.getElementById('previewBlock').onclick = function(e) {
-  if (e.target === this) {
-    this.style.display = 'none';
-    document.body.classList.remove('modal-open');
-  }
-};
-
-function updatePriceInRow(input, price, optPrice, optQty) {
-  const qty = +input.value;
-  const priceCell = input.parentElement.parentElement.querySelector('.price-cell span');
-  if (optQty && qty >= optQty && optPrice) {
-    priceCell.textContent = optPrice + 'c';
-  } else {
-    priceCell.textContent = price + 'c';
-  }
-}
-
-document.getElementById('logoutUser').onclick = () => {
-  isAdmin = false;
-  document.getElementById('adminAddProduct').style.display = 'none';
-  document.getElementById('adminAuth').style.display = 'block';
-  document.getElementById('managementHeader').style.display = 'none';
-  document.getElementById('adminPassword').value = '';
-  localStorage.removeItem('userData');
-  document.getElementById('name').value = '';
-  document.getElementById('phone').value = '';
-  document.getElementById('address').value = '';
-  Swal.fire('Вы вышли из профиля');
-  renderProducts();
-  // Скрываем админ-панель
-  document.getElementById('adminPanel').style.display = 'none';
-};
-
-// Добавляем функцию для проверки изображений
-async function checkImage(url) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve(true);
-    img.onerror = () => resolve(false);
-    img.src = url;
-  });
-}
-
-// Функция отображения товаров
-function renderProducts() {
-  console.log('Rendering products, admin status:', isAdmin);
-  // ВРЕМЕННО: показываем все товары без фильтрации по image/title для диагностики
-  let filtered = isAdmin ? products : products.filter(p => !p.blocked); // .filter(p => p.title?.trim() && p.image?.trim());
-
-  if (search.value) {
-    filtered = filtered.filter(p => p.title && p.title.toLowerCase().includes(search.value.toLowerCase()));
-  }
-
-  if (sort.value) {
-    filtered.sort((a, b) => sort.value === 'asc' ? a.price - b.price : b.price - a.price);
-  }
-
-  productTable.innerHTML = '';
-
-  filtered.forEach((p, idx) => {
-    console.log('Product in render:', p); // ЛОГ для диагностики
-    const isMobile = window.innerWidth <= 600;
-    // Контейнер фото: увеличим размер для мобильных, добавим центрирование и отступ
-    const containerSize = isMobile ? 'width:36px;height:36px;display:flex;align-items:center;justify-content:center;margin:2px 0;' : 'width:100px;height:100px;display:flex;align-items:center;justify-content:center;';
-    // Фото: чуть больше для мобильных, с отступом
-    const imgSize = isMobile ? 'max-width:50px;max-height:50px;border-radius:5px;margin:2px 0;' : 'max-width:60px;max-height:60px;border-radius:8px;';
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${idx + 1}</td>
-      <td>
-        <div style="position: relative; ${containerSize}">
-          <img src="${p.image}"
-               class="product-img"
-               alt="${p.title}"
-               style="cursor:pointer; ${imgSize} object-fit: contain; display:block; margin:auto;"
-               onclick="showPreview('${p.image}')"
-               onerror="this.onerror=null; this.src='no-image.png'; this.style.opacity='0.5';"
-               onload="this.style.opacity='1';"
-          />
-          <div class="image-loading" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #f5f5f5;">
-            <span style="color: #666;">Загрузка...</span>
-          </div>
-          ${isAdmin ? `<label style='position:absolute;bottom:2px;right:2px;cursor:pointer;background:#007bffcc;color:#fff;padding:2px 7px;border-radius:6px;font-size:13px;z-index:2;'>✎<input type='file' accept='image/*' style='display:none;' onchange='changeProductImage(event,"${p.id}")'></label>` : ''}
+  <!-- Окно заказов от партнеров -->
+  <div id="partnersOrdersWindow" style="display:none; position:fixed; top:0; left:0; right:0; bottom:56px; background:rgba(0,0,0,0.6); z-index:9650;">
+    <div style="background:#fff; width:95%; max-width:1200px; height:90vh; margin:3vh auto; border-radius:12px; overflow:hidden; display:flex; flex-direction:column;">
+      
+      <!-- Шапка -->
+      <div style="background:linear-gradient(90deg, #4facfe, #00f2fe); color:white; padding:20px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h2 style="margin:0; font-size:24px;">🤝 Заказы от партнеров</h2>
+          <p style="margin:5px 0 0; opacity:0.9; ">Статистика и список заказов по партнерам</p>
         </div>
-      </td>
+        <button onclick="closePartnersOrdersWindow()" style="background:rgba(255,255,255,0.2); color:white; border:none; font-size:28px; width:40px; height:40px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
+      </div>
+
+      <!-- Фильтры -->
+      <div style="padding:15px; background:#f8f9fa; border-bottom:1px solid #e0e0e0; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <select id="partnersFilterDate" onchange="loadPartnersOrders()" style="padding:10px; border:1px solid #ddd; border-radius:6px; ">
+          <option value="all">Все время</option>
+          <option value="today">Сегодня</option>
+          <option value="week">За неделю</option>
+          <option value="month">За месяц</option>
+        </select>
+        
+        <select id="partnersFilterPartner" onchange="loadPartnersOrders()" style="padding:10px; border:1px solid #ddd; border-radius:6px; ">
+          <option value="all">Все партнеры</option>
+        </select>
+        
+        <button onclick="loadPartnersOrders()" style="padding:10px 20px; background:#007bff; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">🔄 Обновить</button>
+        <button onclick="exportPartnersToExcel()" style="padding:10px 20px; background:#28a745; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">📊 Экспорт в Excel</button>
+      </div>
+
+      <!-- Статистика партнеров -->
+      <div id="partnersStats" style="padding:15px; background:#fff; border-bottom:2px solid #e0e0e0;">
+        <div style="text-align:center; color:#999;">Загрузка статистики...</div>
+      </div>
+
+      <!-- Список заказов -->
+      <div id="partnersOrdersList" style="flex:1; overflow-y:auto; padding:15px;">
+        <div style="text-align:center; color:#999; padding:40px;">Загрузка заказов...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно избранных товаров -->
+  <div id="favoritesPage" style="display:none; position:fixed; top:0; left:0; right:0; bottom:56px; background:#f5f5f5; z-index:9500;">
+    <div style="height:100%; display:flex; flex-direction:column;">
+      <!-- Заголовок избранного -->
+      <div style="background:#fff; padding:15px 20px; border-bottom:1px solid #e0e0e0; display:flex; align-items:center; flex-shrink:0;">
+        <button onclick="closeFavoritesPage()" style="background:none; border:none; font-size:24px; cursor:pointer; padding:0; margin-right:10px;">←</button>
+        <div style="font-size:17px; font-weight:600; color:#333; flex:1;">❤️ Избранное</div>
+        <button onclick="clearFavorites()" style="background:none; border:none; color:#f44336; font-size:13px; cursor:pointer;">Очистить</button>
+      </div>
       
-<td>
-  ${
-    isAdmin
-      ? `<input type="text" value="${p.title}" onchange="updateProductTitle('${p.id}', this.value)" style="width: 100%; padding: 5px;" class="admin-product-input">`
-      : (() => {
-          const matches = p.title && p.title.match(/\\(.*?\\)/g);
-          if (matches && matches.length) {
-            const lastBracket = matches[matches.length - 1];
-            const main = p.title.replace(lastBracket, '').trim();
-            return `${main}<div style="font-size:12px;color:#888;">${lastBracket}</div>`;
-          } else {
-            return p.title;
-          }
-        })()
-  }
-</td>
-
-      <td class="price-cell">
-        ${isAdmin ? `
-          <input type="number" value="${p.price}" 
-            onchange="updateProductPrice('${p.id}', 'price', this.value)" 
-            style="width: 80px; text-align: center;" class="admin-product-input">
-        ` : `<span>${p.price}</span>`}c
-      </td>
-      <td>
-        ${isAdmin ? `
-          <input type="number" min="1" value="${p.minQty || 1}" 
-            onchange="updateProductPrice('${p.id}', 'minQty', this.value)"
-            style="width: 80px; text-align: center;" class="admin-product-input">
-        ` : `
-          <input type="number" min="${p.minQty || 1}" value="${p.minQty || 1}" 
-            oninput="updatePriceInRow(this, ${p.price}, ${p.optPrice || p.price}, ${p.optQty || 0})" />
-        `}
-      </td>
-      <td><button onclick="addToCart('${p.id}', '${p.title}', ${p.price}, '${p.image}', this)">добавить</button></td>
-      ${isAdmin ? `
-        <td class="admin-product-row">
-          <button onclick="deleteProduct('${p.id}')" class="admin-product-btn" style="background: #dc3545;">Удалить</button>
-          <button onclick="showMoveModal('${p.id}', 'up')" class="admin-product-btn" ${idx === 0 ? 'disabled' : ''}>↑</button>
-          <button onclick="showMoveModal('${p.id}', 'down')" class="admin-product-btn" ${idx === filtered.length - 1 ? 'disabled' : ''}>↓</button>
-          <button onclick="showEditWholesaleModal('${p.id}')" class="admin-product-btn">Опт</button>
-          <button onclick="toggleProductBlock('${p.id}', ${p.blocked || false})" class="admin-product-btn" style="background:#ff9800; color:#222;">${p.blocked ? 'Разблок.' : 'Блок'}</button>
-        </td>
-      ` : ''}
-    `;
-    productTable.appendChild(row);
-
-    // Добавляем обработчик загрузки изображения
-    const img = row.querySelector('img');
-    const loadingDiv = row.querySelector('.image-loading');
-    
-    img.onload = function() {
-      loadingDiv.style.display = 'none';
-      this.style.opacity = '1';
-    };
-    
-    img.onerror = function() {
-      loadingDiv.style.display = 'none';
-      this.src = 'no-image.png';
-      this.style.opacity = '0.5';
-    };
-  });
-}
-
-// Обработчик входа администратора
-document.getElementById('loginAdmin').addEventListener('click', function() {
-  const password = document.getElementById('adminPassword').value;
-  console.log('Login attempt with password:', password);
-  
-  if (password === ADMIN_PASSWORD) {
-    isAdmin = true;
-    document.getElementById('adminAddProduct').style.display = 'block';
-    document.getElementById('adminAuth').style.display = 'none';
-    document.getElementById('managementHeader').style.display = 'table-cell';
-    Swal.fire('Успех!', 'Вы вошли как администратор', 'success');
-    renderProducts();
-    loadOrderHistory();
-      // Показываем админ-панель
-      document.getElementById('adminPanel').style.display = '';
-  } else {
-    Swal.fire('Ошибка', 'Неверный пароль', 'error');
-  }
-});
-
-// Функция удаления товара
-async function deleteProduct(productId) {
-  try {
-    const result = await Swal.fire({
-      title: 'Удалить товар?',
-      text: "Это действие нельзя отменить!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#dc3545',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: 'Да, удалить!',
-      cancelButtonText: 'Отмена'
-    });
-
-    if (result.isConfirmed) {
-      await db.collection('products').doc(productId).delete();
-      Swal.fire('Удалено!', 'Товар был успешно удален.', 'success');
-      loadProducts();
-    }
-  } catch (error) {
-    console.error('Error deleting product:', error);
-    Swal.fire('Ошибка', 'Не удалось удалить товар', 'error');
-  }
-}
-
-// Функция для перемещения товаров
-const moveModal = document.createElement('div');
-moveModal.id = 'moveModal';
-moveModal.style.cssText = `
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.5);
-  z-index: 1000;
-`;
-moveModal.innerHTML = `
-  <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 500px;">
-    <h3>Переместить товар</h3>
-    <div style="margin-bottom: 15px;">
-      <p>Текущая позиция: <span id="currentPosition">1</span></p>
-      <label>Переместить на позицию:</label>
-      <input type="number" id="moveSteps" value="1" min="1" style="width: 100%; margin-top: 5px;">
-    </div>
-    <div style="display: flex; justify-content: space-between;">
-      <button onclick="closeMoveModal()" style="background: #6c757d;">Отмена</button>
-      <button onclick="moveProductMultiple()" style="background: #28a745;">Переместить</button>
+      <!-- Список избранных товаров -->
+      <div id="favoritesPageItems" style="flex:1; overflow-y:auto; padding:0; background:#fff;">
+        <!-- Товары будут добавлены через JS -->
+      </div>
+      
+      <!-- Пустое избранное -->
+      <div id="favoritesEmptyMessage" style="display:none; text-align:center; padding:60px 20px; color:#999; background:#fff; flex:1;">
+        <div style="font-size:48px; margin-bottom:15px;">❤️</div>
+        <div style="font-size:16px;">Избранное пусто</div>
+      </div>
+      
+      <!-- Нижняя панель -->
+      <div id="favoritesPageFooter" style="background:#fff; border-top:1px solid #e0e0e0; padding:15px 20px; flex-shrink:0;">
+        <div id="favoritesPageSummary" style="font-size:12px; color:#888; margin-bottom:12px;"></div>
+        <button onclick="addAllFavoritesToCart()" style="width:100%; background:#333; color:white; border:none; padding:15px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;">Добавить все в корзину</button>
+      </div>
     </div>
   </div>
-`;
-document.body.appendChild(moveModal);
 
-let currentMoveProductId = null;
-let currentMoveDirection = null;
-
-function showMoveModal(productId, direction) {
-  currentMoveProductId = productId;
-  currentMoveDirection = direction;
-  const product = products.find(p => p.id === productId);
-  const currentIndex = products.findIndex(p => p.id === productId);
-  document.getElementById('currentPosition').textContent = currentIndex + 1;
-  document.getElementById('moveSteps').value = currentIndex + 1;
-  moveModal.style.display = 'block';
-}
-
-async function moveProductMultiple() {
-  if (!currentMoveProductId) return;
-  
-  try {
-    const targetPosition = parseInt(document.getElementById('moveSteps').value) || 1;
-    const product = products.find(p => p.id === currentMoveProductId);
-    const currentIndex = products.findIndex(p => p.id === currentMoveProductId);
-    
-    if (!product || currentIndex === -1) return;
-    
-    const newIndex = Math.max(0, Math.min(products.length - 1, targetPosition - 1));
-    
-    if (currentIndex === newIndex) {
-      closeMoveModal();
-      return;
-    }
-    
-    const newProducts = [...products];
-    const [movedProduct] = newProducts.splice(currentIndex, 1);
-    newProducts.splice(newIndex, 0, movedProduct);
-    
-    const batch = db.batch();
-    newProducts.forEach((p, index) => {
-      const productRef = db.collection('products').doc(p.id);
-      batch.update(productRef, { order: index });
-    });
-    
-    await batch.commit();
-    products = newProducts;
-    renderProducts();
-    closeMoveModal();
-    Swal.fire('Успех!', 'Товар перемещен', 'success');
-  } catch (error) {
-    console.error('Error moving product:', error);
-    Swal.fire('Ошибка', 'Не удалось переместить товар', 'error');
-    closeMoveModal();
-  }
-}
-
-function closeMoveModal() {
-  moveModal.style.display = 'none';
-  currentMoveProductId = null;
-  currentMoveDirection = null;
-}
-
-// Функции для редактирования оптовых цен
-const editWholesaleModal = document.createElement('div');
-editWholesaleModal.id = 'editWholesaleModal';
-editWholesaleModal.style.cssText = `
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.5);
-  z-index: 1000;
-`;
-editWholesaleModal.innerHTML = `
-  <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 500px;">
-    <h3>Редактирование оптовых цен</h3>
-    <div style="margin-bottom: 15px;">
-      <label>Оптовая цена:</label>
-      <input type="number" id="editOptPrice" style="width: 100%; margin-top: 5px;">
-    </div>
-    <div style="margin-bottom: 15px;">
-      <label>Минимальное количество для опта:</label>
-      <input type="number" id="editOptQty" style="width: 100%; margin-top: 5px;">
-    </div>
-    <div style="display: flex; justify-content: space-between;">
-      <button onclick="closeEditWholesaleModal()" style="background: #6c757d;">Отмена</button>
-      <button onclick="saveWholesaleChanges()" style="background: #28a745;">Сохранить</button>
+  <!-- Модальное окно отслеживания заказа для клиента -->
+  <div id="trackOrderModal" onclick="if(event.target === this) closeTrackOrderModal();" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:8000; justify-content:center; align-items:center;">
+    <div style="background:white; width:95%; max-width:600px; max-height:90vh; border-radius:16px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <!-- Заголовок -->
+      <div style="background:linear-gradient(135deg, #17a2b8 0%, #138496 100%); color:white; padding:20px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h2 style="margin:0; font-size:22px;">📦 Отслеживание заказа</h2>
+          <p style="margin:5px 0 0; opacity:0.9; font-size:14px;">Введите ваш номер телефона</p>
+        </div>
+        <button onclick="closeTrackOrderModal()" style="background:rgba(255,255,255,0.2); color:white; border:none; font-size:28px; width:45px; height:45px; border-radius:50%; cursor:pointer;">&times;</button>
+      </div>
+      
+      <!-- Поиск по телефону -->
+      <div style="padding:20px; border-bottom:1px solid #e0e0e0;">
+        <div style="display:flex; gap:10px;">
+          <input type="tel" id="trackPhoneInput" placeholder="Ваш номер телефона" style="flex:3; min-width:0; padding:14px; border:2px solid #17a2b8; border-radius:10px; font-size:16px;">
+          <button onclick="searchMyOrders()" style="flex:1; max-width:100px; padding:14px 10px; background:linear-gradient(135deg, #17a2b8, #138496); color:white; border:none; border-radius:10px; cursor:pointer; font-weight:600; font-size:14px; white-space:nowrap;">🔍 Найти</button>
+        </div>
+      </div>
+      
+      <!-- Список заказов клиента -->
+      <div id="trackOrdersList" style="flex:1; overflow-y:auto; padding:20px; min-height:200px;">
+        <div style="text-align:center; color:#999; padding:40px;">
+          <div style="font-size:48px; margin-bottom:15px;">📱</div>
+          <div>Введите номер телефона, указанный при заказе</div>
+        </div>
+      </div>
     </div>
   </div>
-`;
-document.body.appendChild(editWholesaleModal);
 
-let currentEditingProductId = null;
 
-function showEditWholesaleModal(productId) {
-  const product = products.find(p => p.id === productId);
-  if (!product) return;
-  
-  currentEditingProductId = productId;
-  document.getElementById('editOptPrice').value = product.optPrice || '';
-  document.getElementById('editOptQty').value = product.optQty || '';
-  editWholesaleModal.style.display = 'block';
-}
-
-function closeEditWholesaleModal() {
-  editWholesaleModal.style.display = 'none';
-  currentEditingProductId = null;
-}
-
-async function saveWholesaleChanges() {
-  if (!currentEditingProductId) return;
-  
-  try {
-    const optPrice = document.getElementById('editOptPrice').value;
-    const optQty = document.getElementById('editOptQty').value;
-    
-    await db.collection('products').doc(currentEditingProductId).update({
-      optPrice: optPrice ? Number(optPrice) : null,
-      optQty: optQty ? Number(optQty) : null
-    });
-    
-    Swal.fire('Успех!', 'Оптовые цены обновлены', 'success');
-    closeEditWholesaleModal();
-    loadProducts();
-  } catch (error) {
-    console.error('Error updating wholesale prices:', error);
-    Swal.fire('Ошибка', 'Не удалось обновить оптовые цены', 'error');
-  }
-}
-
-// Функция обновления цены товара
-async function updateProductPrice(productId, field, value) {
-  try {
-    const updateData = {};
-    updateData[field] = Number(value);
-    
-    await db.collection('products').doc(productId).update(updateData);
-    Swal.fire('Успех!', 'Цена обновлена', 'success');
-    loadProducts();
-  } catch (error) {
-    console.error('Error updating product price:', error);
-    Swal.fire('Ошибка', 'Не удалось обновить цену', 'error');
-  }
-}
-
-// Обработчик клика вне модального окна
-editWholesaleModal.onclick = function(e) {
-  if (e.target === this) {
-    closeEditWholesaleModal();
-  }
-};
-
-  
-
-// Обновить название товара
-async function updateProductTitle(productId, newTitle) {
-  try {
-    await db.collection('products').doc(productId).update({ title: newTitle });
-    Swal.fire('Успех!', 'Название обновлено', 'success');
-    loadProducts();
-  } catch (error) {
-    console.error('Ошибка при обновлении названия:', error);
-    Swal.fire('Ошибка', 'Не удалось обновить название', 'error');
-  }
-}
-
-// Заблокировать/разблокировать товар
-async function toggleProductBlock(productId, currentStatus) {
-  try {
-    await db.collection('products').doc(productId).update({ blocked: !currentStatus });
-    Swal.fire('Успех!', !currentStatus ? 'Товар заблокирован' : 'Товар разблокирован', 'success');
-    loadProducts();
-  } catch (error) {
-    console.error('Ошибка при смене статуса блокировки:', error);
-    Swal.fire('Ошибка', 'Не удалось изменить статус блокировки', 'error');
-  }
-}
-
-</script>
+  <!-- Глобальные переменные приложения -->
+  <script>
+    let searchFiltersActive = false;
+    let lastSearchResults = 0;
+    let _renderProductsTimer = null;
+    let _renderProductsPending = false;
+    let products = [];
+    let isAdmin = false;
+    let isEditorMode = false;
+    let currentSeller = null;
+    let cachedSellerCategories = [];
+    let boxPurchaseMode = false;
+    let productsReady = false;
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const productTable = document.getElementById('productTable');
+    const search = document.getElementById('search');
+    const sort = document.getElementById('sort');
+    const cartList = document.getElementById('cartList');
+    const totalSum = document.getElementById('totalSum');
+  </script>
 
 <!-- Кнопки прокрутки вверх/вниз -->
-  <div class="scroll-buttons" style="position:fixed;right:20px;bottom:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;">
-    <button id="scrollTopBtn" style="background:#007bff;color:#fff;border:none;padding:10px 14px;border-radius:12px;box-shadow:0 2px 8px #0001;cursor:pointer;font-size:18px;">▲</button>
-    <button id="scrollBottomBtn" style="background:#007bff;color:#fff;border:none;padding:10px 14px;border-radius:12px;box-shadow:0 2px 8px #0001;cursor:pointer;font-size:18px;">▼</button>
-  </div>
-</body>
-<script>
-// --- Функция для показа/скрытия админ-панели ---
-function toggleAdminPanel() {
-  const panel = document.getElementById('adminPanel');
-  if (panel.classList.contains('admin-panel-hidden')) {
-    panel.classList.remove('admin-panel-hidden');
-    document.getElementById('hideAdminPanelBtn').textContent = 'Скрыть панель';
-  } else {
-    panel.classList.add('admin-panel-hidden');
-    document.getElementById('hideAdminPanelBtn').textContent = 'Показать панель';
-  }
-}
-// Смена фото товара админом
-async function changeProductImage(e, productId) {
-  const file = e.target.files[0];
-  if (!file) return;
-  try {
-    // Можно использовать uploadToCloudinary или uploadImageToStorage
-    const url = await uploadToCloudinary(file);
-    await db.collection('products').doc(productId).update({ image: url });
-    Swal.fire('Фото обновлено!', '', 'success');
-    loadProducts();
-  } catch (err) {
-    Swal.fire('Ошибка', 'Не удалось обновить фото', 'error');
-  }
-}
-// Кнопка корзины: прокрутка к корзине и обновление количества
-const cartFloatBtn = document.getElementById('cartFloatBtn');
-const cartFloatCount = document.getElementById('cartFloatCount');
-const orderForm = document.querySelector('.order-form');
+<button id="scrollTopBtn" class="scroll-nav-btn" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+</button>
+<button id="scrollBottomBtn" class="scroll-nav-btn" onclick="window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+</button>
 
-cartFloatBtn.onclick = function() {
-  if (orderForm) {
-    orderForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-};
+  <footer id="siteFooter" style="background: #003366; color: #fff; padding:14px 10px; text-align:center; margin-top:18px;">
+    <div style="max-width:1200px; margin:0 auto; font-weight:700;">
+      О нас: мы первый рук из китая — у нас низкие цены
+    </div>
+  </footer>
 
-function updateCartFloatCount() {
-  cartFloatCount.textContent = cart.length;
-}
 
-// Вызовем при инициализации и обновлении корзины
-const origUpdateCart = updateCart;
-updateCart = function() {
-  origUpdateCart.apply(this, arguments);
-  updateCartFloatCount();
-};
-document.addEventListener('DOMContentLoaded', updateCartFloatCount);
-// Скрипт для работы кнопок прокрутки вверх/вниз
-document.getElementById('scrollTopBtn').onclick = function() {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-};
-document.getElementById('scrollBottomBtn').onclick = function() {
-  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-};
-</script>
-</html>
+
+  <!-- КРИТИЧНЫЕ модули: загружаем сразу (нужны для отображения товаров) -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/image-proxy.js"></script>
+  <script src="js/client-identity.js"></script>
+  <script src="js/helpers.js?v=2"></script>
+  <script src="js/product-loader.js"></script>
+  <script src="js/product-renderer.js?v=5"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/favorites.js"></script>
+  <script src="js/quantity.js?v=2"></script>
+  <script src="js/app-init.js?v=3"></script>
+  <script src="js/filters.js?v=2"></script>
+  <script src="js/bottom-nav.js?v=28"></script>
+  <script src="js/scroll-buttons.js"></script>
+
+  <!-- ОТЛОЖЕННЫЕ модули: defer — загружаются параллельно, выполняются после DOM -->
+  <script defer src="js/advanced-search.js"></script>
+  <script defer src="js/product-editor.js"></script>
+  <script defer src="js/order-submit.js"></script>
+  <script defer src="js/complaint-suggestion.js"></script>
+  <script defer src="js/admin-ui.js"></script>
+  <script defer src="js/image-optimizer.js"></script>
+  <script defer src="js/upload.js"></script>
+  <script defer src="js/gallery.js"></script>
+  <script defer src="js/variants.js?v=2"></script>
+  <script defer src="js/orders.js?v=2"></script>
+  <script defer src="js/persist-profile.js?v=1"></script>
+  <script defer src="js/customer-auth.js?v=5"></script>
+  <script defer src="js/seller.js?v=4"></script>
+  <script defer src="js/order-tracking.js?v=2"></script>
+  <script defer src="js/partners.js?v=2"></script>
+  <script defer src="js/agents.js?v=2"></script>
+
+  <!-- PWA и Service Worker -->
+  <script defer src="js/pwa-install.js"></script>
+  <script defer src="js/sw-register.js"></script>
+
+  <!-- ГАРАНТИЯ ПРОКРУТКИ: MutationObserver + SweetAlert2 патч -->
+  <script>
+  (function() {
+    // === 1. Функция принудительного восстановления скролла ===
+    function guaranteeScroll() {
+      // Проверяем — есть ли открытое модальное окно?
+      var hasModal = document.body.classList.contains('modal-open') ||
+                     document.body.classList.contains('scroll-locked');
+      // Проверяем SweetAlert2 — только если видим реальный popup
+      var swalVisible = document.querySelector('.swal2-container.swal2-shown');
+      if (hasModal || swalVisible) return; // Не мешаем модальным окнам
+
+      // Убираем все блокирующие классы
+      document.body.classList.remove('swal2-shown', 'swal2-height-auto', 'swal2-no-backdrop');
+      document.documentElement.classList.remove('swal2-shown', 'swal2-height-auto');
+      
+      // Принудительно ставим прокрутку через setProperty (inline !important)
+      document.body.style.setProperty('overflow-y', 'scroll', 'important');
+      document.body.style.setProperty('overflow-x', 'hidden', 'important');
+      document.body.style.setProperty('position', 'static', 'important');
+      document.body.style.setProperty('height', 'auto', 'important');
+      document.body.style.setProperty('touch-action', 'pan-y', 'important');
+      document.documentElement.style.setProperty('overflow-y', 'scroll', 'important');
+      document.documentElement.style.setProperty('overflow-x', 'hidden', 'important');
+      document.documentElement.style.setProperty('position', 'static', 'important');
+      document.documentElement.style.setProperty('touch-action', 'pan-y', 'important');
+    }
+
+    // === 2. MutationObserver — следим за изменениями body/html ===
+    function setupScrollGuard() {
+      var observer = new MutationObserver(function(mutations) {
+        for (var i = 0; i < mutations.length; i++) {
+          var m = mutations[i];
+          // Если кто-то добавил блокирующий класс или изменил style
+          if (m.type === 'attributes') {
+            var target = m.target;
+            // Если это не наш собственный вызов и нет модалов — восстанавливаем
+            if (target === document.body || target === document.documentElement) {
+              // Используем requestAnimationFrame чтобы не зациклиться
+              requestAnimationFrame(function() {
+                if (!document.body.classList.contains('modal-open') &&
+                    !document.body.classList.contains('scroll-locked')) {
+                  var cs = getComputedStyle(document.body);
+                  if (cs.overflowY === 'hidden' || cs.position === 'fixed') {
+                    console.log('⚠️ ScrollGuard: обнаружена блокировка, восстанавливаю...');
+                    guaranteeScroll();
+                  }
+                }
+              });
+            }
+          }
+        }
+      });
+      
+      observer.observe(document.body, { attributes: true, attributeFilter: ['class', 'style'] });
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style'] });
+    }
+
+    // === 3. Патчим SweetAlert2: запрещаем ему блокировать скролл body ===
+    function patchSweetAlert() {
+      if (typeof Swal === 'undefined') return;
+      var origFire = Swal.fire.bind(Swal);
+      Swal.fire = function() {
+        var result = origFire.apply(Swal, arguments);
+        // После закрытия любого попапа — гарантируем скролл
+        if (result && typeof result.then === 'function') {
+          result.then(function() {
+            setTimeout(guaranteeScroll, 50);
+          }).catch(function() {
+            setTimeout(guaranteeScroll, 50);
+          });
+        }
+        return result;
+      };
+    }
+
+    // === Запуск ===
+    // На DOMContentLoaded — ставим Observer и патчим Swal
+    document.addEventListener('DOMContentLoaded', function() {
+      setupScrollGuard();
+      patchSweetAlert();
+      setTimeout(guaranteeScroll, 100);
+      setTimeout(guaranteeScroll, 500);
+    });
+    // На полную загрузку
+    window.addEventListener('load', function() {
+      setTimeout(guaranteeScroll, 200);
+      setTimeout(guaranteeScroll, 1000);
+      setTimeout(guaranteeScroll, 3000);
+    });
+    // Сразу при парсинге скрипта
+    guaranteeScroll();
+  })();
+  </script>
+
 </body>
 </html>

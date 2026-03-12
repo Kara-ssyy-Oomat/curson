@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <script>if(window.parent!==window)document.write('<style>.bottom-nav,#bottomNavBar{display:none!important}body{padding-bottom:0!important}</style>')</script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#667eea">
+  
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-kerben.jpg">
+  <link rel="icon" type="image/jpeg" href="icon-kerben.jpg">
+  
+  <title>Управление категориями - Админ</title>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+    
+    /* Шапка */
+    .admin-header {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 15px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    
+    .header-top {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .back-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
+    
+    .back-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    
+    .header-title {
+      flex: 1;
+    }
+    
+    .header-title h1 {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    
+    .header-title p {
+      font-size: 12px;
+      opacity: 0.9;
+      margin-top: 2px;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .action-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 10px 18px;
+      border-radius: 20px;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+    }
+    
+    .action-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    
+    .action-btn.primary {
+      background: white;
+      color: #667eea;
+    }
+    
+    .action-btn.primary:hover {
+      background: #f0f0f0;
+    }
+    
+    /* Контейнер */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    /* Статистика */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+    
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .stat-card .icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+    
+    .stat-card .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #333;
+    }
+    
+    .stat-card .label {
+      font-size: 13px;
+      color: #666;
+      margin-top: 4px;
+    }
+    
+    /* Секция стандартных категорий */
+    .section {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .section-title .badge {
+      background: #667eea;
+      color: white;
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-weight: 500;
+    }
+    
+    /* Список категорий */
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    
+    .category-card {
+      background: #f8f9fa;
+      border: 2px solid transparent;
+      border-radius: 10px;
+      padding: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s;
+    }
+    
+    .category-card:hover {
+      border-color: #667eea;
+      background: #f0f4ff;
+    }
+    
+    .category-card.standard {
+      background: #e8f5e9;
+      border-color: #a5d6a7;
+    }
+    
+    .category-card.standard:hover {
+      background: #c8e6c9;
+    }
+    
+    .category-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .category-icon {
+      font-size: 24px;
+    }
+    
+    .category-name {
+      font-weight: 600;
+      color: #333;
+      font-size: 15px;
+    }
+    
+    .category-count {
+      font-size: 12px;
+      color: #666;
+      margin-top: 2px;
+    }
+    
+    .category-actions {
+      display: flex;
+      gap: 5px;
+    }
+    
+    .category-actions button {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 5px;
+      transition: background 0.2s;
+    }
+    
+    .category-actions button:hover {
+      background: rgba(0,0,0,0.1);
+    }
+    
+    .category-actions button.delete:hover {
+      background: #ffebee;
+    }
+    
+    /* Форма добавления */
+    .add-form {
+      background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .add-form h3 {
+      font-size: 16px;
+      color: #333;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .form-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .form-row input {
+      flex: 1;
+      min-width: 200px;
+      padding: 12px 16px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    
+    .form-row input:focus {
+      border-color: #667eea;
+    }
+    
+    .form-row select {
+      padding: 12px 16px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      font-size: 15px;
+      outline: none;
+      background: white;
+      cursor: pointer;
+    }
+    
+    .form-row select:focus {
+      border-color: #667eea;
+    }
+    
+    .form-row button {
+      padding: 12px 25px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    
+    .form-row button:hover {
+      transform: scale(1.02);
+    }
+    
+    /* Пустое состояние */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+    }
+    
+    .empty-state .icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+    
+    .empty-state p {
+      font-size: 15px;
+    }
+    
+    /* Загрузка */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e0e0e0;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Иконки эмодзи */
+    .emoji-picker {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 0;
+    }
+    
+    .emoji-btn {
+      font-size: 24px;
+      background: #f0f0f0;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      width: 44px;
+      height: 44px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .emoji-btn:hover {
+      background: #e0e0e0;
+    }
+    
+    .emoji-btn.selected {
+      border-color: #667eea;
+      background: #e8f0ff;
+    }
+    
+    /* Мобильная адаптация */
+    @media (max-width: 600px) {
+      .header-actions {
+        flex-wrap: wrap;
+      }
+      
+      .form-row {
+        flex-direction: column;
+      }
+      
+      .form-row input,
+      .form-row select,
+      .form-row button {
+        width: 100%;
+      }
+      
+      .categories-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+  <!-- Шапка -->
+  <header class="admin-header">
+    <div class="header-top">
+      <a href="profile.html" class="back-btn" title="Назад">←</a>
+      <div class="header-title">
+        <h1>📂 Управление категориями</h1>
+        <p>Добавление и редактирование категорий</p>
+      </div>
+      <div class="header-actions">
+        <button class="action-btn" onclick="loadCategories()">🔄 Обновить</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Статистика -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="icon">📦</div>
+        <div class="value" id="standardCount">8</div>
+        <div class="label">Стандартных</div>
+      </div>
+      <div class="stat-card">
+        <div class="icon">🏪</div>
+        <div class="value" id="customCount">0</div>
+        <div class="label">Пользовательских</div>
+      </div>
+      <div class="stat-card">
+        <div class="icon">📊</div>
+        <div class="value" id="totalCount">8</div>
+        <div class="label">Всего</div>
+      </div>
+    </div>
+
+    <!-- Форма добавления -->
+    <div class="add-form">
+      <h3>➕ Добавить новую категорию</h3>
+      <div class="form-row">
+        <input type="text" id="newCategoryName" placeholder="Название категории..." maxlength="30">
+        <select id="newCategoryIcon">
+          <option value="🏪">🏪 Магазин</option>
+          <option value="📦">📦 Коробка</option>
+          <option value="🛒">🛒 Корзина</option>
+          <option value="🎁">🎁 Подарок</option>
+          <option value="👕">👕 Одежда</option>
+          <option value="👟">👟 Обувь</option>
+          <option value="💄">💄 Косметика</option>
+          <option value="🧴">🧴 Уход</option>
+          <option value="🍎">🍎 Еда</option>
+          <option value="🏠">🏠 Дом</option>
+          <option value="🔧">🔧 Инструменты</option>
+          <option value="🎮">🎮 Игры</option>
+          <option value="📱">📱 Телефоны</option>
+          <option value="💻">💻 Компьютеры</option>
+          <option value="🎧">🎧 Аудио</option>
+          <option value="📷">📷 Фото</option>
+          <option value="🚗">🚗 Авто</option>
+          <option value="🏃">🏃 Спорт</option>
+          <option value="📚">📚 Книги</option>
+          <option value="✨">✨ Другое</option>
+        </select>
+        <button onclick="addCategory()">➕ Добавить</button>
+      </div>
+    </div>
+
+    <!-- Стандартные категории -->
+    <div class="section">
+      <div class="section-title">
+        📦 Стандартные категории
+        <span class="badge">Нельзя удалить</span>
+      </div>
+      <div class="categories-grid" id="standardCategories">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          Загрузка...
+        </div>
+      </div>
+    </div>
+
+    <!-- Пользовательские категории -->
+    <div class="section">
+      <div class="section-title">
+        🏪 Пользовательские категории
+        <span class="badge" id="customBadge">0</span>
+      </div>
+      <div class="categories-grid" id="customCategories">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          Загрузка...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== FIREBASE INIT ====================
+    const firebaseConfig = {
+      apiKey: "AIzaSyBRQ6hH7kXq7ApJmqbvTG1EQsXwxWEnaGg",
+      authDomain: "svoysayet.firebaseapp.com",
+      projectId: "svoysayet",
+      storageBucket: "svoysayet.firebasestorage.app",
+      messagingSenderId: "785840370498",
+      appId: "1:785840370498:web:e08c7cbef96aborc5e81f1"
+    };
+    
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.firestore();
+    
+    // ==================== ДАННЫЕ ====================
+    const standardCategories = [
+      { name: 'все', icon: '🛍️', label: 'Все товары' },
+      { name: 'ножницы', icon: '✂️', label: 'Ножницы' },
+      { name: 'скотч', icon: '📦', label: 'Скотч' },
+      { name: 'нож', icon: '🔪', label: 'Нож' },
+      { name: 'корейские', icon: '🇰🇷', label: 'Корейские товары' },
+      { name: 'часы', icon: '⌚', label: 'Часы' },
+      { name: 'электроника', icon: '🔌', label: 'Электроника' },
+      { name: 'бытовые', icon: '🏠', label: 'Бытовые техники' }
+    ];
+    
+    let customCategories = [];
+    let productCounts = {};
+    let roundedCounts = {}; // Количество товаров с округлением по категориям
+    
+    // ==================== ИНИЦИАЛИЗАЦИЯ ====================
+    document.addEventListener('DOMContentLoaded', function() {
+      if (checkAdminAccess()) {
+        loadCategories();
+      }
+    });
+    
+    // Проверка доступа админа
+    function checkAdminAccess() {
+      const customerData = localStorage.getItem('customerData');
+      const sellerData = localStorage.getItem('sellerData');
+      
+      let isAdmin = false;
+      
+      if (customerData) {
+        try {
+          const customer = JSON.parse(customerData);
+          if (customer.isAdmin === true) {
+            isAdmin = true;
+          }
+        } catch (e) {}
+      }
+      
+      if (!isAdmin && sellerData) {
+        try {
+          const seller = JSON.parse(sellerData);
+          if (seller.isAdmin === true || seller.role === 'admin') {
+            isAdmin = true;
+          }
+        } catch (e) {}
+      }
+      
+      if (!isAdmin) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Доступ запрещён',
+          text: 'Эта страница только для администраторов',
+          confirmButtonText: 'На главную'
+        }).then(() => {
+          window.location.href = 'index.html';
+        });
+        return false;
+      }
+      
+      return true;
+    }
+    
+    // ==================== ЗАГРУЗКА КАТЕГОРИЙ ====================
+    async function loadCategories() {
+      try {
+        // Загружаем количество товаров по категориям
+        await loadProductCounts();
+        
+        // Отображаем стандартные категории
+        renderStandardCategories();
+        
+        // Загружаем пользовательские категории из Firebase
+        const snapshot = await db.collection('seller_categories').get();
+        
+        customCategories = [];
+        snapshot.forEach(doc => {
+          customCategories.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+        
+        // Сортируем по имени
+        customCategories.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        
+        renderCustomCategories();
+        updateStats();
+        
+      } catch (error) {
+        console.error('Ошибка загрузки категорий:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Ошибка',
+          text: 'Не удалось загрузить категории'
+        });
+      }
+    }
+    
+    // Загрузка количества товаров по категориям
+    async function loadProductCounts() {
+      try {
+        const snapshot = await db.collection('products').get();
+        productCounts = {};
+        roundedCounts = {};
+        
+        snapshot.forEach(doc => {
+          const product = doc.data();
+          const cat = (product.category || 'все').toLowerCase();
+          productCounts[cat] = (productCounts[cat] || 0) + 1;
+          if (product.roundQty) {
+            roundedCounts[cat] = (roundedCounts[cat] || 0) + 1;
+          }
+        });
+        
+      } catch (error) {
+        console.error('Ошибка загрузки товаров:', error);
+      }
+    }
+    
+    // ==================== ОТРИСОВКА ====================
+    function renderStandardCategories() {
+      const container = document.getElementById('standardCategories');
+      
+      container.innerHTML = standardCategories.map(cat => {
+        const count = productCounts[cat.name] || 0;
+        const rounded = roundedCounts[cat.name] || 0;
+        const allRounded = count > 0 && rounded === count;
+        
+        return `
+        <div class="category-card standard">
+          <div class="category-info">
+            <span class="category-icon">${cat.icon}</span>
+            <div>
+              <div class="category-name">${cat.label}</div>
+              <div class="category-count">${count} товаров</div>
+            </div>
+          </div>
+          ${count > 0 ? `
+          <div class="category-actions">
+            <button onclick="toggleRoundQty('${cat.name}')" title="${allRounded ? 'Выключить округление' : 'Включить округление'}" style="background:${allRounded ? '#4caf50' : '#ff9800'}; color:white; border:none; padding:5px 10px; border-radius:5px; font-size:12px; cursor:pointer;">
+              ${allRounded ? '✓ Окр.' : '○ Окр.'}
+            </button>
+          </div>
+          ` : ''}
+        </div>
+      `}).join('');
+    }
+    
+    function renderCustomCategories() {
+      const container = document.getElementById('customCategories');
+      
+      if (customCategories.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="grid-column: 1/-1;">
+            <div class="icon">📂</div>
+            <p>Пользовательских категорий пока нет<br>Добавьте первую категорию выше</p>
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = customCategories.map(cat => {
+        const catLower = cat.name.toLowerCase();
+        const count = productCounts[catLower] || 0;
+        const rounded = roundedCounts[catLower] || 0;
+        const allRounded = count > 0 && rounded === count;
+        
+        return `
+        <div class="category-card" data-id="${cat.id}">
+          <div class="category-info">
+            <span class="category-icon">${cat.icon || '🏪'}</span>
+            <div>
+              <div class="category-name">${escapeHtml(cat.name)}</div>
+              <div class="category-count">${count} товаров</div>
+            </div>
+          </div>
+          <div class="category-actions">
+            ${count > 0 ? `
+            <button onclick="toggleRoundQty('${escapeHtml(cat.name)}')" title="${allRounded ? 'Выключить округление' : 'Включить округление'}" style="background:${allRounded ? '#4caf50' : '#ff9800'}; color:white; border:none; padding:5px 10px; border-radius:5px; font-size:12px; cursor:pointer;">
+              ${allRounded ? '✓ Окр.' : '○ Окр.'}
+            </button>
+            ` : ''}
+            <button onclick="editCategory('${cat.id}')" title="Редактировать">✏️</button>
+            <button class="delete" onclick="deleteCategory('${cat.id}')" title="Удалить">🗑️</button>
+          </div>
+        </div>
+      `}).join('');
+    }
+    
+    function updateStats() {
+      document.getElementById('standardCount').textContent = standardCategories.length;
+      document.getElementById('customCount').textContent = customCategories.length;
+      document.getElementById('totalCount').textContent = standardCategories.length + customCategories.length;
+      document.getElementById('customBadge').textContent = customCategories.length;
+    }
+    
+    // ==================== ДОБАВЛЕНИЕ КАТЕГОРИИ ====================
+    async function addCategory() {
+      const nameInput = document.getElementById('newCategoryName');
+      const iconSelect = document.getElementById('newCategoryIcon');
+      
+      const name = nameInput.value.trim();
+      const icon = iconSelect.value;
+      
+      if (!name) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Введите название',
+          text: 'Название категории не может быть пустым',
+          confirmButtonColor: '#667eea'
+        });
+        nameInput.focus();
+        return;
+      }
+      
+      // Проверяем на дубликаты
+      const nameLower = name.toLowerCase();
+      const isDuplicate = standardCategories.some(c => c.name === nameLower) ||
+                          customCategories.some(c => c.name.toLowerCase() === nameLower);
+      
+      if (isDuplicate) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Категория существует',
+          text: `Категория "${name}" уже существует`,
+          confirmButtonColor: '#667eea'
+        });
+        return;
+      }
+      
+      try {
+        // Добавляем в Firebase
+        await db.collection('seller_categories').add({
+          name: name,
+          icon: icon,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        // Очищаем форму
+        nameInput.value = '';
+        
+        // Перезагружаем список
+        await loadCategories();
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Категория добавлена!',
+          text: `${icon} ${name}`,
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 2000
+        });
+        
+      } catch (error) {
+        console.error('Ошибка добавления категории:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Ошибка',
+          text: 'Не удалось добавить категорию',
+          confirmButtonColor: '#667eea'
+        });
+      }
+    }
+    
+    // ==================== РЕДАКТИРОВАНИЕ КАТЕГОРИИ ====================
+    async function editCategory(id) {
+      const category = customCategories.find(c => c.id === id);
+      if (!category) return;
+      
+      const { value: formValues } = await Swal.fire({
+        title: 'Редактировать категорию',
+        html: `
+          <input id="swal-name" class="swal2-input" placeholder="Название" value="${escapeHtml(category.name)}">
+          <select id="swal-icon" class="swal2-select" style="margin-top:10px; padding:10px; border:1px solid #ddd; border-radius:5px; width:100%;">
+            <option value="🏪" ${category.icon === '🏪' ? 'selected' : ''}>🏪 Магазин</option>
+            <option value="📦" ${category.icon === '📦' ? 'selected' : ''}>📦 Коробка</option>
+            <option value="🛒" ${category.icon === '🛒' ? 'selected' : ''}>🛒 Корзина</option>
+            <option value="🎁" ${category.icon === '🎁' ? 'selected' : ''}>🎁 Подарок</option>
+            <option value="👕" ${category.icon === '👕' ? 'selected' : ''}>👕 Одежда</option>
+            <option value="👟" ${category.icon === '👟' ? 'selected' : ''}>👟 Обувь</option>
+            <option value="💄" ${category.icon === '💄' ? 'selected' : ''}>💄 Косметика</option>
+            <option value="🧴" ${category.icon === '🧴' ? 'selected' : ''}>🧴 Уход</option>
+            <option value="🍎" ${category.icon === '🍎' ? 'selected' : ''}>🍎 Еда</option>
+            <option value="🏠" ${category.icon === '🏠' ? 'selected' : ''}>🏠 Дом</option>
+            <option value="🔧" ${category.icon === '🔧' ? 'selected' : ''}>🔧 Инструменты</option>
+            <option value="🎮" ${category.icon === '🎮' ? 'selected' : ''}>🎮 Игры</option>
+            <option value="📱" ${category.icon === '📱' ? 'selected' : ''}>📱 Телефоны</option>
+            <option value="💻" ${category.icon === '💻' ? 'selected' : ''}>💻 Компьютеры</option>
+            <option value="🎧" ${category.icon === '🎧' ? 'selected' : ''}>🎧 Аудио</option>
+            <option value="📷" ${category.icon === '📷' ? 'selected' : ''}>📷 Фото</option>
+            <option value="🚗" ${category.icon === '🚗' ? 'selected' : ''}>🚗 Авто</option>
+            <option value="🏃" ${category.icon === '🏃' ? 'selected' : ''}>🏃 Спорт</option>
+            <option value="📚" ${category.icon === '📚' ? 'selected' : ''}>📚 Книги</option>
+            <option value="✨" ${category.icon === '✨' ? 'selected' : ''}>✨ Другое</option>
+          </select>
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Сохранить',
+        cancelButtonText: 'Отмена',
+        confirmButtonColor: '#667eea',
+        preConfirm: () => {
+          return {
+            name: document.getElementById('swal-name').value.trim(),
+            icon: document.getElementById('swal-icon').value
+          };
+        }
+      });
+      
+      if (!formValues) return;
+      
+      if (!formValues.name) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Введите название',
+          confirmButtonColor: '#667eea'
+        });
+        return;
+      }
+      
+      try {
+        await db.collection('seller_categories').doc(id).update({
+          name: formValues.name,
+          icon: formValues.icon,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        await loadCategories();
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Сохранено!',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 1500
+        });
+        
+      } catch (error) {
+        console.error('Ошибка редактирования:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Ошибка',
+          text: 'Не удалось сохранить изменения',
+          confirmButtonColor: '#667eea'
+        });
+      }
+    }
+    
+    // ==================== УДАЛЕНИЕ КАТЕГОРИИ ====================
+    async function deleteCategory(id) {
+      const category = customCategories.find(c => c.id === id);
+      if (!category) return;
+      
+      const productsInCategory = productCounts[category.name.toLowerCase()] || 0;
+      
+      let warningText = `Категория "${category.name}" будет удалена.`;
+      if (productsInCategory > 0) {
+        warningText += `\n\n⚠️ В этой категории ${productsInCategory} товар(ов). Они останутся, но без категории.`;
+      }
+      
+      const result = await Swal.fire({
+        title: 'Удалить категорию?',
+        text: warningText,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Да, удалить',
+        cancelButtonText: 'Отмена',
+        confirmButtonColor: '#dc3545'
+      });
+      
+      if (!result.isConfirmed) return;
+      
+      try {
+        await db.collection('seller_categories').doc(id).delete();
+        
+        await loadCategories();
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Удалено!',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 1500
+        });
+        
+      } catch (error) {
+        console.error('Ошибка удаления:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Ошибка',
+          text: 'Не удалось удалить категорию',
+          confirmButtonColor: '#667eea'
+        });
+      }
+    }
+    
+    // ==================== ОКРУГЛЕНИЕ ПО КАТЕГОРИИ ====================
+    async function toggleRoundQty(categoryName) {
+      const catLower = categoryName.toLowerCase();
+      const count = productCounts[catLower] || 0;
+      const rounded = roundedCounts[catLower] || 0;
+      
+      if (count === 0) {
+        Swal.fire('Нет товаров', 'В этой категории нет товаров', 'info');
+        return;
+      }
+      
+      const allRounded = rounded === count;
+      const newValue = !allRounded;
+      const actionText = newValue ? 'включить' : 'выключить';
+      
+      const result = await Swal.fire({
+        title: `${newValue ? '✓' : '○'} Округление`,
+        html: `${actionText.charAt(0).toUpperCase() + actionText.slice(1)} округление для <b>${count}</b> товаров в категории "<b>${categoryName}</b>"?<br><br>
+        <small style="color:#666;">При округлении количество товара будет автоматически округляться до кратного minQty.</small>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: newValue ? '✓ Включить' : '○ Выключить',
+        confirmButtonColor: newValue ? '#4caf50' : '#ff9800',
+        cancelButtonText: 'Отмена'
+      });
+      
+      if (!result.isConfirmed) return;
+      
+      try {
+        Swal.fire({
+          title: 'Обновление...',
+          text: `Обновляем ${count} товаров...`,
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading()
+        });
+        
+        // Получаем все товары этой категории
+        const snapshot = await db.collection('products')
+          .where('category', '==', categoryName)
+          .get();
+        
+        // Также проверяем в нижнем регистре
+        const snapshot2 = await db.collection('products')
+          .where('category', '==', catLower)
+          .get();
+        
+        const allDocs = new Map();
+        snapshot.forEach(doc => allDocs.set(doc.id, doc.ref));
+        snapshot2.forEach(doc => allDocs.set(doc.id, doc.ref));
+        
+        const batch = db.batch();
+        allDocs.forEach((ref, id) => {
+          batch.update(ref, { roundQty: newValue });
+        });
+        
+        await batch.commit();
+        
+        // Обновляем локальные счётчики
+        roundedCounts[catLower] = newValue ? count : 0;
+        
+        // Перерисовываем
+        renderStandardCategories();
+        renderCustomCategories();
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Готово!',
+          text: `Округление ${newValue ? 'включено' : 'выключено'} для ${allDocs.size} товаров`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+        
+      } catch (error) {
+        console.error('Ошибка обновления округления:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Ошибка',
+          text: 'Не удалось обновить товары',
+          confirmButtonColor: '#667eea'
+        });
+      }
+    }
+    
+    // ==================== ВСПОМОГАТЕЛЬНЫЕ ====================
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Enter для добавления
+    document.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter' && document.activeElement.id === 'newCategoryName') {
+        addCategory();
+      }
+    });
+  </script>
+<script src="js/bottom-nav.js?v=28"></script>
+</body>
+</html>

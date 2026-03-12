@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <script>if(window.parent!==window)document.write('<style>.bottom-nav,#bottomNavBar{display:none!important}body{padding-bottom:0!important}.main-container{height:100vh!important}.modal-overlay{bottom:0!important}</style>')</script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Управление продавцами - Кербен</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+    input, textarea, select {
+      font-family: inherit;
+      font-size: 16px;
+    }
+    
+    /* SweetAlert поверх всего */
+    .swal2-container {
+      z-index: 999999 !important;
+    }
+    
+
+    
+    /* Основной контейнер */
+    .main-container {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 56px);
+      background: #fff;
+    }
+    
+    /* Шапка */
+    .page-header {
+      background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+      color: white;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .page-header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+    .page-header p {
+      margin: 5px 0 0;
+      opacity: 0.9;
+      font-size: 14px;
+    }
+    .back-btn {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: none;
+      font-size: 28px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* Панель статистики */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      padding: 15px;
+      background: #f8f9fa;
+      flex-shrink: 0;
+    }
+    .stat-card {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .stat-card .label {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    .stat-card .value {
+      font-size: 24px;
+      font-weight: 700;
+    }
+    .stat-card .value.green { color: #28a745; }
+    .stat-card .value.orange { color: #fd7e14; }
+    .stat-card .value.red { color: #dc3545; }
+    .stat-card .value.blue { color: #007bff; }
+    
+    /* Панель фильтров */
+    .filters-panel {
+      padding: 15px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #e0e0e0;
+      flex-shrink: 0;
+    }
+    .controls-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .controls-row select,
+    .controls-row input {
+      padding: 10px 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      min-width: 150px;
+    }
+    .controls-row button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .btn-primary {
+      background: linear-gradient(90deg, #28a745, #20c997);
+      color: white;
+    }
+    .btn-blue {
+      background: #007bff;
+      color: white;
+    }
+    
+    /* Контент */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+    }
+    
+    /* Карточки продавцов */
+    .seller-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 15px;
+      overflow: hidden;
+    }
+    .seller-card.blocked {
+      background: #fff5f5;
+      border: 1px solid #ffcdd2;
+    }
+    .seller-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 15px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .seller-info h3 {
+      margin: 0 0 5px 0;
+      font-size: 16px;
+      color: #333;
+    }
+    .seller-info p {
+      margin: 3px 0;
+      font-size: 13px;
+      color: #666;
+    }
+    .seller-status {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .seller-status.active {
+      background: #d4edda;
+      color: #155724;
+    }
+    .seller-status.blocked {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .seller-status.pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .seller-stats {
+      display: flex;
+      gap: 20px;
+      padding: 12px 15px;
+      background: #f8f9fa;
+      font-size: 13px;
+    }
+    .seller-stats span {
+      color: #666;
+    }
+    .seller-stats strong {
+      color: #333;
+    }
+    .seller-actions {
+      display: flex;
+      gap: 8px;
+      padding: 12px 15px;
+      flex-wrap: wrap;
+    }
+    .seller-actions button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .btn-success { background: #28a745; color: white; }
+    .btn-warning { background: #ffc107; color: #000; }
+    .btn-danger { background: #dc3545; color: white; }
+    .btn-info { background: #17a2b8; color: white; }
+    .btn-secondary { background: #6c757d; color: white; }
+    
+    /* Пустое состояние */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+    .empty-state .icon {
+      font-size: 64px;
+      margin-bottom: 15px;
+    }
+    .empty-state p {
+      font-size: 16px;
+    }
+    
+    /* Модальное окно */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 56px;
+      background: rgba(0,0,0,0.5);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+    }
+    .modal-body {
+      padding: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      font-size: 14px;
+      color: #333;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    .modal-footer {
+      padding: 15px 20px;
+      border-top: 1px solid #e0e0e0;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    
+    /* Поиск */
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+      max-width: 300px;
+    }
+    
+    @media (max-width: 600px) {
+      .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .controls-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .search-box {
+        max-width: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="main-container">
+  <!-- Шапка -->
+  <div class="page-header">
+    <div>
+      <h1>🏪 Продавцы</h1>
+      <p>Управление продавцами магазина</p>
+    </div>
+    <button class="back-btn" onclick="window.location.href='profile.html'">←</button>
+  </div>
+  
+  <!-- Статистика -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="label">👥 Всего</div>
+      <div class="value blue" id="totalSellers">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">✅ Активных</div>
+      <div class="value green" id="activeSellers">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">🚫 Заблокировано</div>
+      <div class="value red" id="blockedSellers">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">📦 Товаров</div>
+      <div class="value orange" id="totalProducts">0</div>
+    </div>
+  </div>
+  
+  <!-- Панель фильтров -->
+  <div class="filters-panel">
+    <div class="controls-row">
+      <input type="text" id="searchSeller" class="search-box" placeholder="🔍 Поиск по имени или телефону..." oninput="filterSellers()">
+      <select id="statusFilter" onchange="filterSellers()">
+        <option value="all">Все статусы</option>
+        <option value="active">✅ Активные</option>
+        <option value="blocked">🚫 Заблокированные</option>
+        <option value="pending">⏳ На модерации</option>
+      </select>
+      <button class="btn-blue" onclick="loadSellers()">🔄 Обновить</button>
+    </div>
+  </div>
+  
+  <!-- Список продавцов -->
+  <div class="content-area" id="sellersContainer">
+    <div class="empty-state">
+      <div class="icon">⏳</div>
+      <p>Загрузка продавцов...</p>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно товаров продавца -->
+<div class="modal-overlay" id="sellerProductsModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="sellerProductsTitle">📦 Товары продавца</h2>
+      <button class="modal-close" onclick="closeSellerProductsModal()">×</button>
+    </div>
+    <div class="modal-body" id="sellerProductsList">
+      <!-- Товары будут здесь -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeSellerProductsModal()">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/bottom-nav.js?v=28"></script>
+
+<script>
+// Firebase конфигурация
+const firebaseConfig = {
+  apiKey: "AIzaSyBRQ6hH7kXq7ApJmqbvTG1EQsXwxWEnaGg",
+  authDomain: "svoysayet.firebaseapp.com",
+  projectId: "svoysayet",
+  storageBucket: "svoysayet.firebasestorage.app",
+  messagingSenderId: "450143000217",
+  appId: "1:450143000217:web:7495cefaea0b94966e8a08",
+  measurementId: "G-Y8VG9E29FY"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Глобальные переменные
+let sellers = [];
+let products = [];
+
+// При загрузке страницы
+document.addEventListener('DOMContentLoaded', async function() {
+  console.log('🏪 Загрузка страницы управления продавцами...');
+  
+  try {
+    await loadProducts();
+    await loadSellers();
+    console.log('✅ Страница загружена успешно');
+  } catch (error) {
+    console.error('❌ Ошибка загрузки:', error);
+    document.getElementById('sellersContainer').innerHTML = `
+      <div class="empty-state">
+        <div class="icon">❌</div>
+        <p>Ошибка загрузки: ${error.message}</p>
+      </div>
+    `;
+  }
+});
+
+// Загрузка товаров
+async function loadProducts() {
+  const snapshot = await db.collection('products').get();
+  products = [];
+  snapshot.forEach(doc => {
+    products.push({ id: doc.id, ...doc.data() });
+  });
+  console.log('📦 Загружено товаров:', products.length);
+}
+
+// Загрузка продавцов
+async function loadSellers() {
+  try {
+    const snapshot = await db.collection('sellers').get();
+    sellers = [];
+    snapshot.forEach(doc => {
+      sellers.push({ id: doc.id, ...doc.data() });
+    });
+    
+    console.log('👥 Загружено продавцов:', sellers.length);
+    
+    // Обновляем статистику
+    updateStats();
+    
+    // Отображаем список
+    filterSellers();
+    
+  } catch (error) {
+    console.error('❌ Ошибка загрузки продавцов:', error);
+    throw error;
+  }
+}
+
+// Обновление статистики
+function updateStats() {
+  const active = sellers.filter(s => s.status !== 'blocked' && s.status !== 'pending').length;
+  const blocked = sellers.filter(s => s.status === 'blocked').length;
+  const pending = sellers.filter(s => s.status === 'pending').length;
+  
+  // Считаем товары всех продавцов
+  const sellerProductsCount = products.filter(p => p.sellerId).length;
+  
+  document.getElementById('totalSellers').textContent = sellers.length;
+  document.getElementById('activeSellers').textContent = active;
+  document.getElementById('blockedSellers').textContent = blocked;
+  document.getElementById('totalProducts').textContent = sellerProductsCount;
+}
+
+// Фильтрация продавцов
+function filterSellers() {
+  const search = document.getElementById('searchSeller').value.toLowerCase().trim();
+  const status = document.getElementById('statusFilter').value;
+  
+  let filtered = sellers;
+  
+  // Фильтр по статусу
+  if (status !== 'all') {
+    if (status === 'active') {
+      filtered = filtered.filter(s => s.status !== 'blocked' && s.status !== 'pending');
+    } else {
+      filtered = filtered.filter(s => s.status === status);
+    }
+  }
+  
+  // Поиск
+  if (search) {
+    filtered = filtered.filter(s => 
+      (s.name && s.name.toLowerCase().includes(search)) ||
+      (s.phone && s.phone.includes(search)) ||
+      (s.city && s.city.toLowerCase().includes(search))
+    );
+  }
+  
+  // Сортировка: pending сверху, потом активные, потом заблокированные
+  filtered.sort((a, b) => {
+    const order = { pending: 0, active: 1, blocked: 2 };
+    const aOrder = order[a.status] !== undefined ? order[a.status] : 1;
+    const bOrder = order[b.status] !== undefined ? order[b.status] : 1;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return (a.name || '').localeCompare(b.name || '');
+  });
+  
+  renderSellers(filtered);
+}
+
+// Отображение продавцов
+function renderSellers(list) {
+  const container = document.getElementById('sellersContainer');
+  
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">🏪</div>
+        <p>Продавцов не найдено</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = list.map(seller => {
+    const isBlocked = seller.status === 'blocked';
+    const isPending = seller.status === 'pending';
+    
+    // Считаем товары продавца
+    const sellerProducts = products.filter(p => p.sellerId === seller.id);
+    
+    // Статус
+    let statusClass = 'active';
+    let statusText = '✅ Активен';
+    if (isBlocked) {
+      statusClass = 'blocked';
+      statusText = '🚫 Заблокирован';
+    } else if (isPending) {
+      statusClass = 'pending';
+      statusText = '⏳ На модерации';
+    }
+    
+    // Дата регистрации
+    let regDate = '';
+    if (seller.createdAt) {
+      const date = new Date(seller.createdAt);
+      regDate = date.toLocaleDateString('ru-RU');
+    }
+    
+    return `
+      <div class="seller-card ${isBlocked ? 'blocked' : ''}">
+        <div class="seller-header">
+          <div class="seller-info">
+            <h3>${seller.name || 'Без имени'}</h3>
+            <p>📱 ${seller.phone || 'Телефон не указан'}</p>
+            <p>📍 ${seller.city || 'Город не указан'}</p>
+            ${seller.telegramId ? `<p>📲 Telegram: ${seller.telegramId}</p>` : ''}
+          </div>
+          <span class="seller-status ${statusClass}">${statusText}</span>
+        </div>
+        
+        <div class="seller-stats">
+          <span>📦 Товаров: <strong>${sellerProducts.length}</strong></span>
+          ${regDate ? `<span>📅 Регистрация: <strong>${regDate}</strong></span>` : ''}
+        </div>
+        
+        <div class="seller-actions">
+          ${isPending
+            ? `<button class="btn-success" onclick="approveSeller('${seller.id}')">✅ Одобрить</button>
+               <button class="btn-danger" onclick="rejectSeller('${seller.id}', '${(seller.name || '').replace(/'/g, "\\'")}')">❌ Отклонить</button>`
+            : isBlocked 
+              ? `<button class="btn-success" onclick="unblockSeller('${seller.id}')">✅ Разблокировать</button>`
+              : `<button class="btn-warning" onclick="blockSeller('${seller.id}')">🚫 Заблокировать</button>`
+          }
+          <button class="btn-info" onclick="viewSellerProducts('${seller.id}', '${(seller.name || '').replace(/'/g, "\\'")}')">📦 Товары (${sellerProducts.length})</button>
+          <button class="btn-danger" onclick="deleteSeller('${seller.id}', '${(seller.name || '').replace(/'/g, "\\'")}')">🗑️ Удалить</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Заблокировать продавца
+async function blockSeller(sellerId) {
+  const seller = sellers.find(s => s.id === sellerId);
+  
+  const result = await Swal.fire({
+    title: '🚫 Заблокировать продавца?',
+    html: `Продавец <strong>"${seller?.name || 'Без имени'}"</strong> не сможет войти в систему`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Заблокировать',
+    confirmButtonColor: '#ffc107',
+    cancelButtonText: 'Отмена'
+  });
+  
+  if (result.isConfirmed) {
+    try {
+      await db.collection('sellers').doc(sellerId).update({ status: 'blocked' });
+      
+      // Обновляем локально
+      const idx = sellers.findIndex(s => s.id === sellerId);
+      if (idx !== -1) sellers[idx].status = 'blocked';
+      
+      updateStats();
+      filterSellers();
+      
+      Swal.fire('Готово!', 'Продавец заблокирован', 'success');
+    } catch (error) {
+      console.error('Ошибка блокировки:', error);
+      Swal.fire('Ошибка', 'Не удалось заблокировать продавца', 'error');
+    }
+  }
+}
+
+// Разблокировать продавца
+async function unblockSeller(sellerId) {
+  try {
+    await db.collection('sellers').doc(sellerId).update({ status: 'active' });
+    
+    // Обновляем локально
+    const idx = sellers.findIndex(s => s.id === sellerId);
+    if (idx !== -1) sellers[idx].status = 'active';
+    
+    updateStats();
+    filterSellers();
+    
+    Swal.fire('Готово!', 'Продавец разблокирован', 'success');
+  } catch (error) {
+    console.error('Ошибка разблокировки:', error);
+    Swal.fire('Ошибка', 'Не удалось разблокировать продавца', 'error');
+  }
+}
+
+// Одобрить заявку продавца
+async function approveSeller(sellerId) {
+  const seller = sellers.find(s => s.id === sellerId);
+  
+  const result = await Swal.fire({
+    title: '✅ Одобрить продавца?',
+    html: `Продавец <strong>"${seller?.name || 'Без имени'}"</strong> получит доступ к системе и сможет добавлять товары.`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Одобрить',
+    confirmButtonColor: '#4CAF50',
+    cancelButtonText: 'Отмена'
+  });
+  
+  if (result.isConfirmed) {
+    try {
+      await db.collection('sellers').doc(sellerId).update({ status: 'active' });
+      
+      // Обновляем локально
+      const idx = sellers.findIndex(s => s.id === sellerId);
+      if (idx !== -1) sellers[idx].status = 'active';
+      
+      updateStats();
+      filterSellers();
+      
+      // Отправляем уведомление в Telegram продавцу
+      if (seller && seller.telegramId) {
+        fetch(`https://api.telegram.org/bot7599592948:AAGtc_dGAcJFVQOSYcKVY0W-7GegszY9n8E/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: seller.telegramId,
+            text: `✅ Ваша заявка на регистрацию продавца одобрена!\n\nТеперь вы можете войти в систему и добавлять товары.`,
+            parse_mode: 'Markdown'
+          })
+        }).catch(() => {});
+      }
+      
+      Swal.fire('Одобрено!', `Продавец "${seller?.name}" теперь активен`, 'success');
+    } catch (error) {
+      console.error('Ошибка одобрения:', error);
+      Swal.fire('Ошибка', 'Не удалось одобрить продавца', 'error');
+    }
+  }
+}
+
+// Отклонить заявку продавца
+async function rejectSeller(sellerId, sellerName) {
+  const result = await Swal.fire({
+    title: '❌ Отклонить заявку?',
+    html: `Заявка продавца <strong>"${sellerName}"</strong> будет удалена.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Отклонить и удалить',
+    confirmButtonColor: '#dc3545',
+    cancelButtonText: 'Отмена'
+  });
+  
+  if (result.isConfirmed) {
+    try {
+      await db.collection('sellers').doc(sellerId).delete();
+      
+      // Удаляем локально
+      sellers = sellers.filter(s => s.id !== sellerId);
+      
+      updateStats();
+      filterSellers();
+      
+      Swal.fire('Отклонено!', 'Заявка удалена', 'success');
+    } catch (error) {
+      console.error('Ошибка отклонения:', error);
+      Swal.fire('Ошибка', 'Не удалось отклонить заявку', 'error');
+    }
+  }
+}
+
+// Удалить продавца
+async function deleteSeller(sellerId, sellerName) {
+  const sellerProducts = products.filter(p => p.sellerId === sellerId);
+  
+  const result = await Swal.fire({
+    title: '🗑️ Удалить продавца?',
+    html: `
+      Продавец <strong>"${sellerName}"</strong> будет удалён.<br><br>
+      ${sellerProducts.length > 0 
+        ? `<span style="color:#ff9800;">⚠️ У продавца ${sellerProducts.length} товаров. Товары останутся в каталоге.</span>`
+        : '<span style="color:#666;">У продавца нет товаров.</span>'
+      }
+    `,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Удалить',
+    confirmButtonColor: '#dc3545',
+    cancelButtonText: 'Отмена'
+  });
+  
+  if (result.isConfirmed) {
+    try {
+      await db.collection('sellers').doc(sellerId).delete();
+      
+      // Удаляем локально
+      sellers = sellers.filter(s => s.id !== sellerId);
+      
+      updateStats();
+      filterSellers();
+      
+      Swal.fire('Готово!', 'Продавец удалён', 'success');
+    } catch (error) {
+      console.error('Ошибка удаления:', error);
+      Swal.fire('Ошибка', 'Не удалось удалить продавца', 'error');
+    }
+  }
+}
+
+// Просмотр товаров продавца
+function viewSellerProducts(sellerId, sellerName) {
+  const sellerProducts = products.filter(p => p.sellerId === sellerId);
+  
+  document.getElementById('sellerProductsTitle').textContent = `📦 Товары: ${sellerName} (${sellerProducts.length})`;
+  
+  const container = document.getElementById('sellerProductsList');
+  
+  if (sellerProducts.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:40px; color:#999;">
+        <div style="font-size:48px; margin-bottom:10px;">📦</div>
+        <p>У продавца нет товаров</p>
+      </div>
+    `;
+  } else {
+    container.innerHTML = sellerProducts.map(p => `
+      <div style="display:flex; gap:12px; padding:12px; border:1px solid #e0e0e0; border-radius:8px; margin-bottom:10px; align-items:center;">
+        <img src="${p.image || 'https://via.placeholder.com/60x60?text=Нет+фото'}" 
+             style="width:60px; height:60px; object-fit:cover; border-radius:6px; flex-shrink:0;"
+             onerror="this.src='https://via.placeholder.com/60x60?text=Нет+фото'">
+        <div style="flex:1; min-width:0;">
+          <div style="font-weight:600; font-size:14px; color:#333; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            ${p.title || 'Без названия'}
+          </div>
+          <div style="font-size:15px; color:#e53935; font-weight:600;">${p.price || 0} сом</div>
+          <div style="font-size:12px; color:#666;">📁 ${p.category || 'Без категории'}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  document.getElementById('sellerProductsModal').classList.add('active');
+}
+
+// Закрыть модальное окно товаров
+function closeSellerProductsModal() {
+  document.getElementById('sellerProductsModal').classList.remove('active');
+}
+
+// Закрытие модального окна по клику на фон
+document.getElementById('sellerProductsModal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeSellerProductsModal();
+  }
+});
+</script>
+
+</body>
+</html>
